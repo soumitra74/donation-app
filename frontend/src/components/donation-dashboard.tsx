@@ -34,9 +34,11 @@ interface Donation {
 interface DonationDashboardProps {
   user: User
   onLogout: () => void
+  theme: 'light' | 'dark' | 'ambient'
+  onThemeChange: (theme: 'light' | 'dark' | 'ambient') => void
 }
 
-export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
+export function DonationDashboard({ user, onLogout, theme, onThemeChange }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [showForm, setShowForm] = useState(false)
   const [selectedApartment, setSelectedApartment] = useState<{ tower: number; floor: number; unit: number } | null>(
@@ -107,28 +109,92 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
     setCurrentTowerIndex((prev) => (prev - 1 + assignedTowers.length) % assignedTowers.length)
   }
 
+  const getThemeClasses = () => {
+    switch (theme) {
+      case 'dark':
+        return 'min-h-screen bg-gray-900'
+      case 'ambient':
+        return 'min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden'
+      default:
+        return 'min-h-screen bg-gray-50'
+    }
+  }
+
   if (showForm) {
-    return (
-      <DonationForm
-        onSubmit={handleAddDonation}
-        onCancel={() => {
-          setShowForm(false)
-          setSelectedApartment(null)
-        }}
-        preselectedApartment={selectedApartment}
-      />
-    )
+    return <DonationForm
+      onSubmit={handleAddDonation}
+      onCancel={() => {
+        setShowForm(false)
+        setSelectedApartment(null)
+      }}
+      preselectedApartment={selectedApartment}
+    />
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={getThemeClasses()}>
+      {/* Ambient theme background effects */}
+      {theme === 'ambient' && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-indigo-500/20"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-30"></div>
+        </>
+      )}
+
+      {/* Theme Selector */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className={`flex rounded-lg p-1 border transition-all ${
+          theme === 'ambient' 
+            ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            : theme === 'dark'
+            ? 'bg-gray-800 border-gray-600'
+            : 'bg-white border-gray-200 shadow-sm'
+        }`}>
+          {(['light', 'dark', 'ambient'] as const).map((themeOption) => (
+            <button
+              key={themeOption}
+              onClick={() => onThemeChange(themeOption)}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                theme === themeOption
+                  ? theme === 'ambient' 
+                    ? 'bg-white/20 text-white shadow-sm'
+                    : theme === 'dark'
+                    ? 'bg-gray-700 text-white shadow-sm'
+                    : 'bg-blue-600 text-white shadow-sm'
+                  : theme === 'ambient'
+                  ? 'text-white/70 hover:text-white hover:bg-white/10'
+                  : theme === 'dark'
+                  ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Header - Hidden on mobile */}
-      <header className="bg-white shadow-sm border-b hidden sm:block">
+      <header className={`shadow-sm border-b hidden sm:block relative z-10 ${
+        theme === 'ambient' 
+          ? 'bg-white/10 backdrop-blur-md border-white/20' 
+          : theme === 'dark'
+          ? 'bg-gray-800 border-gray-700'
+          : 'bg-white border-gray-200'
+      }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Donation Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome back, {user.name}</p>
+              <h1 className={`text-xl font-semibold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Donation Dashboard
+              </h1>
+              <p className={`text-sm ${
+                theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                Welcome back, {user.name}
+              </p>
             </div>
             <Button variant="outline" onClick={onLogout}>
               <LogOut className="h-4 w-4 mr-2" />
@@ -139,11 +205,25 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
       </header>
 
       {/* Mobile Header */}
-      <div className="sm:hidden bg-white shadow-sm border-b px-4 py-3">
+      <div className={`sm:hidden shadow-sm border-b px-4 py-3 relative z-10 ${
+        theme === 'ambient' 
+          ? 'bg-white/10 backdrop-blur-md border-white/20' 
+          : theme === 'dark'
+          ? 'bg-gray-800 border-gray-700'
+          : 'bg-white border-gray-200'
+      }`}>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
-            <p className="text-xs text-gray-600">{user.name}</p>
+            <h1 className={`text-lg font-semibold ${
+              theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              Dashboard
+            </h1>
+            <p className={`text-xs ${
+              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }`}>
+              {user.name}
+            </p>
           </div>
           <Button variant="outline" size="sm" onClick={onLogout}>
             <LogOut className="h-4 w-4" />
@@ -326,55 +406,134 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className={`${
+            theme === 'ambient' 
+              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Collected</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Total Collected
+              </CardTitle>
+              <TrendingUp className={`h-4 w-4 ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{totalAmount.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">From {totalDonors} donations</p>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                ₹{totalAmount.toLocaleString()}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                From {totalDonors} donations
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={`${
+            theme === 'ambient' 
+              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Donations Count</CardTitle>
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Donations Count
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalDonors}</div>
-              <p className="text-xs text-muted-foreground">Collected by you</p>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {totalDonors}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Collected by you
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={`${
+            theme === 'ambient' 
+              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Average Donation</CardTitle>
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Average Donation
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹{totalDonors > 0 ? Math.round(totalAmount / totalDonors) : 0}</div>
-              <p className="text-xs text-muted-foreground">Per donation</p>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                ₹{totalDonors > 0 ? Math.round(totalAmount / totalDonors) : 0}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Per donation
+              </p>
             </CardContent>
           </Card>
         </div>
 
         {/* Add Donation Button */}
         <div className="mb-6">
-          <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Button 
+            onClick={() => setShowForm(true)} 
+            className={`${
+              theme === 'ambient' 
+                ? 'bg-blue-500/80 hover:bg-blue-500 text-white backdrop-blur-md' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Record New Donation
           </Button>
         </div>
 
         {/* Recent Donations */}
-        <Card>
+        <Card className={`${
+          theme === 'ambient' 
+            ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            : theme === 'dark'
+            ? 'bg-gray-800 border-gray-700'
+            : 'bg-white'
+        }`}>
           <CardHeader>
-            <CardTitle>Recent Donations</CardTitle>
-            <CardDescription>Your latest donation records</CardDescription>
+            <CardTitle className={
+              theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }>
+              Recent Donations
+            </CardTitle>
+            <CardDescription className={
+              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+            }>
+              Your latest donation records
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {myDonations.length === 0 ? (
-              <p className="text-center text-gray-500 py-8">
+              <p className={`text-center py-8 ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
                 No donations recorded yet. Click on apartment numbers above to get started.
               </p>
             ) : (
@@ -383,22 +542,38 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
                   .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                   .slice(0, 10)
                   .map((donation) => (
-                    <div key={donation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={donation.id} className={`flex items-center justify-between p-4 border rounded-lg ${
+                      theme === 'ambient' 
+                        ? 'bg-white/5 border-white/10' 
+                        : theme === 'dark'
+                        ? 'bg-gray-700 border-gray-600'
+                        : 'bg-gray-50 border-gray-200'
+                    }`}>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{donation.donorName}</span>
+                          <span className={`font-medium ${
+                            theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {donation.donorName}
+                          </span>
                           <Badge variant="secondary">
                             {getApartmentNumber(donation.tower, donation.floor, donation.unit)}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className={`text-sm ${
+                          theme === 'ambient' ? 'text-white/70' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
                           {new Date(donation.timestamp).toLocaleDateString()} at{" "}
                           {new Date(donation.timestamp).toLocaleTimeString()}
                         </p>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-semibold text-green-600">₹{donation.amount}</div>
-                        {donation.headCount && <p className="text-xs text-gray-500">{donation.headCount} people</p>}
+                        {donation.headCount && <p className={`text-xs ${
+                          theme === 'ambient' ? 'text-white/50' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                        }`}>
+                          {donation.headCount} people
+                        </p>}
                       </div>
                     </div>
                   ))}
@@ -406,6 +581,24 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
             )}
           </CardContent>
         </Card>
+
+        {/* Logout Button at Bottom */}
+        <div className="mt-8 mb-6 text-center">
+          <Button 
+            variant="outline" 
+            onClick={onLogout}
+            className={`${
+              theme === 'ambient' 
+                ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                : theme === 'dark'
+                ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </div>
       </main>
     </div>
   )
