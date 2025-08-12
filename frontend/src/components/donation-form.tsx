@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -27,14 +27,30 @@ interface Donation {
 interface DonationFormProps {
   onSubmit: (donation: Donation) => void
   onCancel: () => void
+  preselectedApartment?: {
+    tower: number
+    floor: number
+    unit: number
+  } | null
 }
 
-export function DonationForm({ onSubmit, onCancel }: DonationFormProps) {
+export function DonationForm({ onSubmit, onCancel, preselectedApartment }: DonationFormProps) {
   const [currentApartment, setCurrentApartment] = useState({
-    tower: 1,
-    floor: 1,
-    unit: 1,
+    tower: preselectedApartment?.tower || 1,
+    floor: preselectedApartment?.floor || 1,
+    unit: preselectedApartment?.unit || 1,
   })
+
+  // Update currentApartment when preselectedApartment changes
+  useEffect(() => {
+    if (preselectedApartment) {
+      setCurrentApartment({
+        tower: preselectedApartment.tower,
+        floor: preselectedApartment.floor,
+        unit: preselectedApartment.unit,
+      })
+    }
+  }, [preselectedApartment])
 
   const [formData, setFormData] = useState({
     donorName: "",
@@ -48,8 +64,9 @@ export function DonationForm({ onSubmit, onCancel }: DonationFormProps) {
   })
 
   const getFlatNumber = () => {
+    console.log(currentApartment)
     const towerLetter = String.fromCharCode(65 + currentApartment.tower - 1) // A, B, C, etc.
-    const floorUnit = `${currentApartment.floor.toString().padStart(2, "0")}${currentApartment.unit}`
+    const floorUnit = `${currentApartment.floor.toString()}${currentApartment.unit.toString().padStart(2, "0")}`
     return `${towerLetter}${floorUnit}`
   }
 
@@ -133,7 +150,7 @@ export function DonationForm({ onSubmit, onCancel }: DonationFormProps) {
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{getFlatNumber()}</div>
               <div className="text-sm text-gray-500">
-                Tower {currentApartment.tower} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
+                Block {currentApartment.tower} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
               </div>
             </div>
 
@@ -228,6 +245,7 @@ export function DonationForm({ onSubmit, onCancel }: DonationFormProps) {
                         <SelectValue placeholder="Sponsorship" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="NA">Select</SelectItem>
                         <SelectItem value="Flowers">Flowers</SelectItem>
                         <SelectItem value="Sweets">Sweets</SelectItem>
                         <SelectItem value="Decoration">Decoration</SelectItem>
@@ -276,7 +294,7 @@ export function DonationForm({ onSubmit, onCancel }: DonationFormProps) {
                   </Button>
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     className="h-12 text-base bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
                     disabled={!formData.donorName || !formData.amount}
                     onClick={() => {

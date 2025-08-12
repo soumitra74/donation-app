@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
-import { LogOut, Plus, TrendingUp } from "lucide-react"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface User {
   id: string
@@ -42,6 +42,7 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
   const [selectedApartment, setSelectedApartment] = useState<{ tower: number; floor: number; unit: number } | null>(
     null,
   )
+  const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
 
   const assignedTowers = [1, 2, 3] // Example: volunteer assigned to towers 1, 2, 3
 
@@ -85,10 +86,11 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
 
   const getApartmentNumber = (tower: number, floor: number, unit: number) => {
     const towerLetter = String.fromCharCode(64 + tower) // A, B, C, etc.
-    return `${towerLetter}${floor.toString().padStart(2, "0")}${unit}`
+    return `${towerLetter}${floor.toString()}${unit.toString().padStart(2, "0")}`
   }
 
   const handleApartmentClick = (tower: number, floor: number, unit: number) => {
+    console.log(tower, floor, unit)
     setSelectedApartment({ tower, floor, unit })
     setShowForm(true)
   }
@@ -96,6 +98,14 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
   const myDonations = donations.filter((d) => d.volunteerId === user.id)
   const totalAmount = myDonations.reduce((sum, d) => sum + d.amount, 0)
   const totalDonors = myDonations.length
+
+  const nextTower = () => {
+    setCurrentTowerIndex((prev) => (prev + 1) % assignedTowers.length)
+  }
+
+  const prevTower = () => {
+    setCurrentTowerIndex((prev) => (prev - 1 + assignedTowers.length) % assignedTowers.length)
+  }
 
   if (showForm) {
     return (
@@ -112,8 +122,8 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      {/* Header - Hidden on mobile */}
+      <header className="bg-white shadow-sm border-b hidden sm:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
@@ -128,12 +138,26 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
         </div>
       </header>
 
+      {/* Mobile Header */}
+      <div className="sm:hidden bg-white shadow-sm border-b px-4 py-3">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-lg font-semibold text-gray-900">Dashboard</h1>
+            <p className="text-xs text-gray-600">{user.name}</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={onLogout}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {/* Desktop Grid Layout */}
+        <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {assignedTowers.map((tower) => (
             <Card key={tower} className="overflow-hidden">
               <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-base">Tower {String.fromCharCode(64 + tower)}</CardTitle>
+                <CardTitle className="text-base">Block {String.fromCharCode(64 + tower)}</CardTitle>
                 <CardDescription className="text-xs">Tap apartment to record</CardDescription>
               </CardHeader>
               <CardContent className="p-3">
@@ -186,6 +210,119 @@ export function DonationDashboard({ user, onLogout }: DonationDashboardProps) {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Mobile Carousel Layout */}
+        <div className="sm:hidden mb-8">
+          <div className="relative">
+            {/* Carousel Navigation */}
+            <div className="flex justify-between items-center mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={prevTower}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Block {String.fromCharCode(64 + assignedTowers[currentTowerIndex])}
+                </h2>
+                <p className="text-xs text-gray-600">
+                  {currentTowerIndex + 1} of {assignedTowers.length}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={nextTower}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Carousel Content */}
+            <div className="overflow-hidden">
+              <div 
+                className="flex transition-transform duration-300 ease-in-out"
+                style={{ transform: `translateX(-${currentTowerIndex * 100}%)` }}
+              >
+                {assignedTowers.map((tower) => (
+                  <div key={tower} className="w-full flex-shrink-0">
+                    <Card className="overflow-hidden">
+                      <CardHeader className="pb-2 px-3 pt-3">
+                        <CardTitle className="text-base">Block {String.fromCharCode(64 + tower)}</CardTitle>
+                        <CardDescription className="text-xs">Tap apartment to record</CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-3">
+                        <div className="grid grid-cols-4 gap-1 text-xs">
+                          {/* Generate 14 floors, 4 units each */}
+                          {Array.from({ length: 14 }, (_, floorIndex) => {
+                            const floor = 14 - floorIndex // Start from 14th floor down to 1st
+                            return Array.from({ length: 4 }, (_, unitIndex) => {
+                              const unit = unitIndex + 1
+                              const status = getApartmentStatus(tower, floor, unit)
+                              const apartmentNumber = getApartmentNumber(tower, floor, unit)
+
+                              return (
+                                <button
+                                  key={`${floor}-${unit}`}
+                                  onClick={() => handleApartmentClick(tower, floor, unit)}
+                                  className={`
+                                    h-8 w-full flex items-center justify-center rounded text-xs font-medium transition-colors active:scale-95
+                                    ${status === "donated" ? "bg-green-100 text-green-800 border border-green-300" : ""}
+                                    ${status === "visited" ? "bg-yellow-100 text-yellow-800 border border-yellow-300" : ""}
+                                    ${status === "skipped" ? "bg-red-100 text-red-800 border border-red-300" : ""}
+                                    ${status === "not-visited" ? "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 active:bg-gray-300" : ""}
+                                  `}
+                                >
+                                  {apartmentNumber}
+                                </button>
+                              )
+                            })
+                          }).flat()}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-1 text-xs">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-100 border border-green-300 rounded"></div>
+                            <span className="text-xs">Donated</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-yellow-100 border border-yellow-300 rounded"></div>
+                            <span className="text-xs">Visited</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
+                            <span className="text-xs">Skip</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-gray-100 border border-gray-200 rounded"></div>
+                            <span className="text-xs">Pending</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Carousel Indicators */}
+            <div className="flex justify-center mt-4 space-x-2">
+              {assignedTowers.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTowerIndex(index)}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === currentTowerIndex ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
