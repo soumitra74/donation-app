@@ -32,14 +32,21 @@ interface DonationFormProps {
     floor: number
     unit: number
   } | null
+  user?: {
+    id: string
+    name: string
+  }
 }
 
-export function DonationForm({ onSubmit, onCancel, preselectedApartment }: DonationFormProps) {
+export function DonationForm({ onSubmit, onCancel, preselectedApartment, user }: DonationFormProps) {
   const [currentApartment, setCurrentApartment] = useState({
     tower: preselectedApartment?.tower || 1,
     floor: preselectedApartment?.floor || 1,
     unit: preselectedApartment?.unit || 1,
   })
+
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [transitionMessage, setTransitionMessage] = useState("")
 
   // Update currentApartment when preselectedApartment changes
   useEffect(() => {
@@ -112,7 +119,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     const donation: Donation = {
@@ -129,7 +136,78 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
       notes: formData.notes.trim() || undefined,
     }
 
-    onSubmit(donation)
+    // Save donation locally (similar to follow-up)
+    const newDonation = {
+      ...donation,
+      id: Date.now().toString(),
+      volunteerId: user?.id || "1", // You can pass this as prop if needed
+      volunteerName: user?.name || "Volunteer", // You can pass this as prop if needed
+      timestamp: new Date().toISOString(),
+    }
+
+    // Save to localStorage
+    const savedDonations = JSON.parse(localStorage.getItem("donation-app-donations") || "[]")
+    savedDonations.push(newDonation)
+    localStorage.setItem("donation-app-donations", JSON.stringify(savedDonations))
+    
+    console.log("Donation saved for apartment:", getFlatNumber())
+    
+    // Show success message and transition to next apartment
+    setIsTransitioning(true)
+    setTransitionMessage("Donation recorded! Moving to next apartment...")
+    
+    setTimeout(() => {
+      navigateToNextApartment()
+      setIsTransitioning(false)
+      setTransitionMessage("")
+    }, 1500)
+  }
+
+  const handleFollowUp = async () => {
+    // Save follow up information (you can extend this as needed)
+    const followUpData = {
+      apartment: getFlatNumber(),
+      tower: currentApartment.tower,
+      floor: currentApartment.floor,
+      unit: currentApartment.unit,
+      timestamp: new Date().toISOString(),
+      status: 'follow-up',
+      notes: formData.notes || 'Marked for follow up'
+    }
+    
+    // Save to localStorage (you can modify this to save to backend)
+    const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]")
+    followUps.push(followUpData)
+    localStorage.setItem("donation-app-followups", JSON.stringify(followUps))
+    
+    console.log("Follow up saved for apartment:", getFlatNumber())
+    
+    // Show success message and transition to next apartment
+    setIsTransitioning(true)
+    setTransitionMessage("Follow up saved! Moving to next apartment...")
+    
+    setTimeout(() => {
+      navigateToNextApartment()
+      setIsTransitioning(false)
+      setTransitionMessage("")
+    }, 1500)
+  }
+
+  const navigateToNextApartment = () => {
+    // Navigate to next apartment
+    navigateNext()
+    
+    // Clear form data for the new apartment
+    setFormData({
+      donorName: "",
+      amount: "",
+      phoneNumber: "",
+      headCount: "",
+      paymentMethod: "cash" as "cash" | "upi-self" | "upi-other",
+      upiOtherPerson: "",
+      sponsorship: "",
+      notes: "",
+    })
   }
 
   const handleInputChange = (field: string, value: string) => {
@@ -139,7 +217,17 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
   const donationAmount = Number.parseFloat(formData.amount) || 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 relative">
+      {/* Transition Overlay */}
+      {isTransitioning && (
+        <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 text-center shadow-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-700 font-medium">{transitionMessage}</p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto">
         <div className="bg-white border-b px-4 py-4">
           <div className="flex items-center justify-between">
@@ -175,6 +263,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                     required
                     placeholder="₹ Donation Amount"
                     className="text-3xl h-16 text-center font-bold border-2 border-blue-200 focus:border-blue-500"
+                    disabled={isTransitioning}
                   />
                 </div>
 
@@ -185,6 +274,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                       variant={formData.paymentMethod === "cash" ? "default" : "outline"}
                       onClick={() => handleInputChange("paymentMethod", "cash")}
                       className="h-12"
+                      disabled={isTransitioning}
                     >
                       Cash
                     </Button>
@@ -193,6 +283,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                       variant={formData.paymentMethod === "upi-self" ? "default" : "outline"}
                       onClick={() => handleInputChange("paymentMethod", "upi-self")}
                       className="h-12"
+                      disabled={isTransitioning}
                     >
                       UPI (self)
                     </Button>
@@ -201,6 +292,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                       variant={formData.paymentMethod === "upi-other" ? "default" : "outline"}
                       onClick={() => handleInputChange("paymentMethod", "upi-other")}
                       className="h-12"
+                      disabled={isTransitioning}
                     >
                       UPI (other)
                     </Button>
@@ -210,6 +302,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                     <Select
                       value={formData.upiOtherPerson}
                       onValueChange={(value) => handleInputChange("upiOtherPerson", value)}
+                      disabled={isTransitioning}
                     >
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Select UPI person" />
@@ -232,6 +325,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                     required
                     placeholder="Donor Name"
                     className="h-12"
+                    disabled={isTransitioning}
                   />
                 </div>
 
@@ -240,6 +334,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                     <Select
                       value={formData.sponsorship}
                       onValueChange={(value) => handleInputChange("sponsorship", value)}
+                      disabled={isTransitioning}
                     >
                       <SelectTrigger className="h-12">
                         <SelectValue placeholder="Sponsorship" />
@@ -257,6 +352,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                       onChange={(e) => handleInputChange("notes", e.target.value)}
                       placeholder="Notes"
                       className="min-h-[80px]"
+                      disabled={isTransitioning}
                     />
                   </div>
                 )}
@@ -270,6 +366,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                       onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                       placeholder="Phone Number"
                       className="h-12"
+                      disabled={isTransitioning}
                     />
 
                     <Input
@@ -280,6 +377,7 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                       onChange={(e) => handleInputChange("headCount", e.target.value)}
                       placeholder="Head Count"
                       className="h-12"
+                      disabled={isTransitioning}
                     />
                   </div>
                 </div>
@@ -288,23 +386,26 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                   <Button
                     type="submit"
                     className="h-12 bg-blue-600 hover:bg-blue-700 text-base font-medium"
-                    disabled={!formData.donorName || !formData.amount}
+                    disabled={!formData.donorName || !formData.amount || isTransitioning}
                   >
-                    Record Donation
+                    {isTransitioning ? "Recording..." : "Record Donation"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     className="h-12 text-base bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                    onClick={() => {
-                      // Handle follow up logic - could mark apartment for follow up
-                      console.log("Follow up clicked for apartment:", getFlatNumber())
-                      // You can add follow up logic here
-                    }}
+                    onClick={handleFollowUp}
+                    disabled={isTransitioning}
                   >
-                    Follow up
+                    {isTransitioning ? "Saving..." : "Follow up"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={onCancel} className="h-12 text-base bg-transparent">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={onCancel} 
+                    className="h-12 text-base bg-transparent"
+                    disabled={isTransitioning}
+                  >
                     Cancel
                   </Button>
                 </div>

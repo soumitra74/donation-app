@@ -76,6 +76,11 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
     const donation = donations.find((d) => d.tower === tower && d.floor === floor && d.unit === unit)
     if (donation) return "donated"
 
+    // Check for follow-up status
+    const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]")
+    const followUp = followUps.find((f: any) => f.tower === tower && f.floor === floor && f.unit === unit)
+    if (followUp) return "follow-up"
+
     // Mock logic for visited/skipped apartments (would come from backend)
     const apartmentKey = `${tower}-${floor}-${unit}`
     const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]")
@@ -128,6 +133,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
         setSelectedApartment(null)
       }}
       preselectedApartment={selectedApartment}
+      user={user}
     />
   }
 
@@ -275,6 +281,8 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                           return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                         } else if (status === "skipped") {
                           return `${baseClasses} bg-red-100 text-red-800 border border-red-300`
+                        } else if (status === "follow-up") {
+                          return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-300`
                         } else {
                           // not-visited
                           if (theme === 'ambient') {
@@ -318,19 +326,19 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-100 border border-blue-300 rounded"></div>
+                    <span className={`text-xs ${
+                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Follow-up
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
                     <span className={`text-xs ${
                       theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
                       Skip
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-gray-100 border border-gray-200 rounded"></div>
-                    <span className={`text-xs ${
-                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Pending
                     </span>
                   </div>
                 </div>
@@ -432,6 +440,8 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                                   return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                                 } else if (status === "skipped") {
                                   return `${baseClasses} bg-red-100 text-red-800 border border-red-300`
+                                } else if (status === "follow-up") {
+                                  return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-300`
                                 } else {
                                   // not-visited
                                   if (theme === 'ambient') {
@@ -475,19 +485,19 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-blue-300 border border-blue-100 rounded"></div>
+                            <span className={`text-xs ${
+                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              Follow-up
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
                             <span className={`text-xs ${
                               theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                             }`}>
                               Skip
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-gray-100 border border-gray-200 rounded"></div>
-                            <span className={`text-xs ${
-                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              Pending
                             </span>
                           </div>
                         </div>
