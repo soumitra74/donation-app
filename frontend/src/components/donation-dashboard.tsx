@@ -137,7 +137,9 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
       {theme === 'ambient' && (
         <>
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-indigo-500/20"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-30"></div>
+          <div className="absolute top-0 left-0 w-full h-full opacity-30" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}></div>
         </>
       )}
 
@@ -235,10 +237,24 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
         {/* Desktop Grid Layout */}
         <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {assignedTowers.map((tower) => (
-            <Card key={tower} className="overflow-hidden">
+            <Card key={tower} className={`overflow-hidden ${
+              theme === 'ambient' 
+                ? 'bg-white/10 backdrop-blur-md border-white/20' 
+                : theme === 'dark'
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white'
+            }`}>
               <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-base">Block {String.fromCharCode(64 + tower)}</CardTitle>
-                <CardDescription className="text-xs">Tap apartment to record</CardDescription>
+                <CardTitle className={`text-base ${
+                  theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Block {String.fromCharCode(64 + tower)}
+                </CardTitle>
+                <CardDescription className={`text-xs ${
+                  theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  Tap apartment to record
+                </CardDescription>
               </CardHeader>
               <CardContent className="p-3">
                 <div className="grid grid-cols-4 gap-1 text-xs">
@@ -250,17 +266,32 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                       const status = getApartmentStatus(tower, floor, unit)
                       const apartmentNumber = getApartmentNumber(tower, floor, unit)
 
+                      const getButtonClasses = () => {
+                        const baseClasses = "h-8 w-full flex items-center justify-center rounded text-xs font-medium transition-colors active:scale-95"
+                        
+                        if (status === "donated") {
+                          return `${baseClasses} bg-green-100 text-green-800 border border-green-300`
+                        } else if (status === "visited") {
+                          return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
+                        } else if (status === "skipped") {
+                          return `${baseClasses} bg-red-100 text-red-800 border border-red-300`
+                        } else {
+                          // not-visited
+                          if (theme === 'ambient') {
+                            return `${baseClasses} bg-white/10 text-white/80 border border-white/20 hover:bg-white/20 hover:text-white active:bg-white/30`
+                          } else if (theme === 'dark') {
+                            return `${baseClasses} bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600 hover:text-white active:bg-gray-500`
+                          } else {
+                            return `${baseClasses} bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 active:bg-gray-300`
+                          }
+                        }
+                      }
+
                       return (
                         <button
                           key={`${floor}-${unit}`}
                           onClick={() => handleApartmentClick(tower, floor, unit)}
-                          className={`
-                            h-8 w-full flex items-center justify-center rounded text-xs font-medium transition-colors active:scale-95
-                            ${status === "donated" ? "bg-green-100 text-green-800 border border-green-300" : ""}
-                            ${status === "visited" ? "bg-yellow-100 text-yellow-800 border border-yellow-300" : ""}
-                            ${status === "skipped" ? "bg-red-100 text-red-800 border border-red-300" : ""}
-                            ${status === "not-visited" ? "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 active:bg-gray-300" : ""}
-                          `}
+                          className={getButtonClasses()}
                         >
                           {apartmentNumber}
                         </button>
@@ -272,19 +303,35 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                 <div className="mt-3 flex flex-wrap gap-1 text-xs">
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-green-100 border border-green-300 rounded"></div>
-                    <span className="text-xs">Donated</span>
+                    <span className={`text-xs ${
+                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Donated
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-yellow-100 border border-yellow-300 rounded"></div>
-                    <span className="text-xs">Visited</span>
+                    <span className={`text-xs ${
+                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Visited
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
-                    <span className="text-xs">Skip</span>
+                    <span className={`text-xs ${
+                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Skip
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-gray-100 border border-gray-200 rounded"></div>
-                    <span className="text-xs">Pending</span>
+                    <span className={`text-xs ${
+                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Pending
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -301,15 +348,25 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                 variant="outline"
                 size="sm"
                 onClick={prevTower}
-                className="h-8 w-8 p-0"
+                className={`h-8 w-8 p-0 ${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="text-center">
-                <h2 className="text-lg font-semibold text-gray-900">
+                <h2 className={`text-lg font-semibold ${
+                  theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }`}>
                   Block {String.fromCharCode(64 + assignedTowers[currentTowerIndex])}
                 </h2>
-                <p className="text-xs text-gray-600">
+                <p className={`text-xs ${
+                  theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }`}>
                   {currentTowerIndex + 1} of {assignedTowers.length}
                 </p>
               </div>
@@ -317,7 +374,13 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                 variant="outline"
                 size="sm"
                 onClick={nextTower}
-                className="h-8 w-8 p-0"
+                className={`h-8 w-8 p-0 ${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -331,10 +394,24 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
               >
                 {assignedTowers.map((tower) => (
                   <div key={tower} className="w-full flex-shrink-0">
-                    <Card className="overflow-hidden">
+                    <Card className={`overflow-hidden ${
+                      theme === 'ambient' 
+                        ? 'bg-white/10 backdrop-blur-md border-white/20' 
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-700'
+                        : 'bg-white'
+                    }`}>
                       <CardHeader className="pb-2 px-3 pt-3">
-                        <CardTitle className="text-base">Block {String.fromCharCode(64 + tower)}</CardTitle>
-                        <CardDescription className="text-xs">Tap apartment to record</CardDescription>
+                        <CardTitle className={`text-base ${
+                          theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          Block {String.fromCharCode(64 + tower)}
+                        </CardTitle>
+                        <CardDescription className={`text-xs ${
+                          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          Tap apartment to record
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="p-3">
                         <div className="grid grid-cols-4 gap-1 text-xs">
@@ -346,17 +423,32 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                               const status = getApartmentStatus(tower, floor, unit)
                               const apartmentNumber = getApartmentNumber(tower, floor, unit)
 
+                              const getButtonClasses = () => {
+                                const baseClasses = "h-8 w-full flex items-center justify-center rounded text-xs font-medium transition-colors active:scale-95"
+                                
+                                if (status === "donated") {
+                                  return `${baseClasses} bg-green-100 text-green-800 border border-green-300`
+                                } else if (status === "visited") {
+                                  return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
+                                } else if (status === "skipped") {
+                                  return `${baseClasses} bg-red-100 text-red-800 border border-red-300`
+                                } else {
+                                  // not-visited
+                                  if (theme === 'ambient') {
+                                    return `${baseClasses} bg-white/10 text-white/80 border border-white/20 hover:bg-white/20 hover:text-white active:bg-white/30`
+                                  } else if (theme === 'dark') {
+                                    return `${baseClasses} bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600 hover:text-white active:bg-gray-500`
+                                  } else {
+                                    return `${baseClasses} bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 active:bg-gray-300`
+                                  }
+                                }
+                              }
+
                               return (
                                 <button
                                   key={`${floor}-${unit}`}
                                   onClick={() => handleApartmentClick(tower, floor, unit)}
-                                  className={`
-                                    h-8 w-full flex items-center justify-center rounded text-xs font-medium transition-colors active:scale-95
-                                    ${status === "donated" ? "bg-green-100 text-green-800 border border-green-300" : ""}
-                                    ${status === "visited" ? "bg-yellow-100 text-yellow-800 border border-yellow-300" : ""}
-                                    ${status === "skipped" ? "bg-red-100 text-red-800 border border-red-300" : ""}
-                                    ${status === "not-visited" ? "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 active:bg-gray-300" : ""}
-                                  `}
+                                  className={getButtonClasses()}
                                 >
                                   {apartmentNumber}
                                 </button>
@@ -368,19 +460,35 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                         <div className="mt-3 flex flex-wrap gap-1 text-xs">
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-green-100 border border-green-300 rounded"></div>
-                            <span className="text-xs">Donated</span>
+                            <span className={`text-xs ${
+                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              Donated
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-yellow-100 border border-yellow-300 rounded"></div>
-                            <span className="text-xs">Visited</span>
+                            <span className={`text-xs ${
+                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              Visited
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
-                            <span className="text-xs">Skip</span>
+                            <span className={`text-xs ${
+                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              Skip
+                            </span>
                           </div>
                           <div className="flex items-center gap-1">
                             <div className="w-2 h-2 bg-gray-100 border border-gray-200 rounded"></div>
-                            <span className="text-xs">Pending</span>
+                            <span className={`text-xs ${
+                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              Pending
+                            </span>
                           </div>
                         </div>
                       </CardContent>
@@ -397,7 +505,9 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                   key={index}
                   onClick={() => setCurrentTowerIndex(index)}
                   className={`w-2 h-2 rounded-full transition-colors ${
-                    index === currentTowerIndex ? 'bg-blue-600' : 'bg-gray-300'
+                    index === currentTowerIndex 
+                      ? theme === 'ambient' ? 'bg-white' : 'bg-blue-600'
+                      : theme === 'ambient' ? 'bg-white/30' : 'bg-gray-300'
                   }`}
                 />
               ))}

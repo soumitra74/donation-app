@@ -296,7 +296,6 @@ export function DonationForm({ onSubmit, onCancel, preselectedApartment }: Donat
                     type="button"
                     variant="outline"
                     className="h-12 text-base bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                    disabled={!formData.donorName || !formData.amount}
                     onClick={() => {
                       // Handle follow up logic - could mark apartment for follow up
                       console.log("Follow up clicked for apartment:", getFlatNumber())
