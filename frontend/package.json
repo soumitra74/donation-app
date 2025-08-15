@@ -16,6 +16,7 @@
     "react-router-dom": "^6.15.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.40.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "autoprefixer": "^10.4.14",
@@ -29,7 +30,15 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "vite",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "test": "playwright test",
+    "test:simple": "playwright test simple.spec.ts",
+    "test:basic": "playwright test basic.spec.ts",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install"
   },
   "browserslist": {
     "production": [
