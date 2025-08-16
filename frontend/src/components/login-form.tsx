@@ -70,7 +70,7 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
         // const volunteer = volunteers.find((v: any) => v.email === email && v.password === password)
         // hardcoding voluntree for now
         // TBD remove this after testing
-        const volunteer = {id: 1, email: "soumitraghosh@hotmail.com", name: "Soumitra Ghosh"}
+        const volunteer = {id: "1", email: "soumitraghosh@hotmail.com", name: "Soumitra Ghosh"}
         console.log("Found volunteer:", volunteer)
 
         if (!volunteer) {

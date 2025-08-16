@@ -25,7 +25,6 @@ interface Donation {
 }
 
 interface DonationFormProps {
-  onSubmit: (donation: Donation) => void
   onCancel: () => void
   preselectedApartment?: {
     tower: number
@@ -38,7 +37,7 @@ interface DonationFormProps {
   }
 }
 
-export function DonationForm({ onSubmit, onCancel, preselectedApartment, user }: DonationFormProps) {
+export function DonationForm({ onCancel, preselectedApartment, user }: DonationFormProps) {
   const [currentApartment, setCurrentApartment] = useState({
     tower: preselectedApartment?.tower || 1,
     floor: preselectedApartment?.floor || 1,

@@ -56,22 +56,6 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
     }
   }, [])
 
-  const handleAddDonation = (donation: Omit<Donation, "id" | "volunteerId" | "volunteerName" | "timestamp">) => {
-    const newDonation: Donation = {
-      ...donation,
-      id: Date.now().toString(),
-      volunteerId: user.id,
-      volunteerName: user.name,
-      timestamp: new Date().toISOString(),
-    }
-
-    const updatedDonations = [...donations, newDonation]
-    setDonations(updatedDonations)
-    localStorage.setItem("donation-app-donations", JSON.stringify(updatedDonations))
-    setShowForm(false)
-    setSelectedApartment(null)
-  }
-
   const getApartmentStatus = (tower: number, floor: number, unit: number) => {
     const donation = donations.find((d) => d.tower === tower && d.floor === floor && d.unit === unit)
     if (donation) return "donated"
@@ -127,7 +111,6 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
 
   if (showForm) {
     return <DonationForm
-      onSubmit={handleAddDonation}
       onCancel={() => {
         setShowForm(false)
         setSelectedApartment(null)
