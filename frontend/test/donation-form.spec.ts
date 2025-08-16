@@ -135,6 +135,26 @@ test.describe('Donation Form', () => {
     await expect(page.locator('text=A1402')).toBeVisible();
   });
 
+  test('should skip apartment and navigate to next apartment', async ({ page }) => {
+    await testUtils.navigateToApartment(1, 14, 1);
+    
+    // Fill some basic info
+    await page.fill('input[placeholder="Donor Name"]', 'Skip Test');
+    await page.fill('textarea[placeholder="Notes"]', 'Apartment not available');
+    
+    // Click skip
+    await testUtils.skipApartment('Apartment not available');
+    
+    // Should show transition message
+    await expect(page.locator('text=Apartment skipped! Moving to next apartment...')).toBeVisible();
+    
+    // Wait for transition to complete
+    await testUtils.waitForTransitionComplete();
+    
+    // Should navigate to next apartment
+    await expect(page.locator('text=A1402')).toBeVisible();
+  });
+
   test('should navigate between apartments using arrow buttons', async ({ page }) => {
     await testUtils.navigateToApartment(1, 14, 1);
     

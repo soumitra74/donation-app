@@ -192,6 +192,36 @@ export function DonationForm({ onCancel, preselectedApartment, user }: DonationF
     }, 1500)
   }
 
+  const handleSkip = async () => {
+    // Save skip information
+    const skipData = {
+      apartment: getFlatNumber(),
+      tower: currentApartment.tower,
+      floor: currentApartment.floor,
+      unit: currentApartment.unit,
+      timestamp: new Date().toISOString(),
+      status: 'skipped',
+      notes: formData.notes || 'Skipped apartment'
+    }
+    
+    // Save to localStorage
+    const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]")
+    skippedApartments.push(skipData)
+    localStorage.setItem("donation-app-skipped", JSON.stringify(skippedApartments))
+    
+    console.log("Skip saved for apartment:", getFlatNumber())
+    
+    // Show success message and transition to next apartment
+    setIsTransitioning(true)
+    setTransitionMessage("Apartment skipped! Moving to next apartment...")
+    
+    setTimeout(() => {
+      navigateToNextApartment()
+      setIsTransitioning(false)
+      setTransitionMessage("")
+    }, 1500)
+  }
+
   const navigateToNextApartment = () => {
     // Navigate to next apartment
     navigateNext()
@@ -397,6 +427,15 @@ export function DonationForm({ onCancel, preselectedApartment, user }: DonationF
                     disabled={isTransitioning}
                   >
                     {isTransitioning ? "Saving..." : "Follow up"}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleSkip} 
+                    className="h-12 text-base bg-transparent"
+                    disabled={isTransitioning}
+                  >
+                    Skip
                   </Button>
                   <Button 
                     type="button" 

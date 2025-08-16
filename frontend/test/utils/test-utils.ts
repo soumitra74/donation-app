@@ -20,6 +20,7 @@ export class TestUtils {
             localStorage.removeItem("donation-app-donations");
             localStorage.removeItem("donation-app-followups");
             localStorage.removeItem("donation-app-volunteers");
+            localStorage.removeItem("donation-app-skipped");
           } catch (e2) {
             console.warn('Could not remove specific localStorage items:', e2);
           }
@@ -107,6 +108,16 @@ export class TestUtils {
   }
 
   /**
+   * Skip apartment
+   */
+  async skipApartment(notes?: string) {
+    if (notes) {
+      await this.page.fill('textarea[placeholder="Notes"]', notes);
+    }
+    await this.page.click('button:has-text("Skip")');
+  }
+
+  /**
    * Change theme
    */
   async changeTheme(theme: 'light' | 'dark' | 'ambient') {
@@ -129,6 +140,11 @@ export class TestUtils {
           const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]");
           const followUp = followUps.find((f: any) => f.tower === tower && f.floor === floor && f.unit === unit);
           if (followUp) return "follow-up";
+
+          // Check skipped
+          const skipped = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]");
+          const skip = skipped.find((s: any) => s.tower === tower && s.floor === floor && s.unit === unit);
+          if (skip) return "skipped";
 
           return "not-visited";
         } catch (e) {

@@ -65,12 +65,15 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
     const followUp = followUps.find((f: any) => f.tower === tower && f.floor === floor && f.unit === unit)
     if (followUp) return "follow-up"
 
-    // Mock logic for visited/skipped apartments (would come from backend)
+    // Check for skipped status
+    const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]")
+    const skipped = skippedApartments.find((s: any) => s.tower === tower && s.floor === floor && s.unit === unit)
+    if (skipped) return "skipped"
+
+    // Mock logic for visited apartments (would come from backend)
     const apartmentKey = `${tower}-${floor}-${unit}`
     const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]")
-    const skippedApartments = JSON.parse(localStorage.getItem("skipped-apartments") || "[]")
 
-    if (skippedApartments.includes(apartmentKey)) return "skipped"
     if (visitedApartments.includes(apartmentKey)) return "visited"
     return "not-visited"
   }
@@ -263,9 +266,9 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                         } else if (status === "visited") {
                           return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                         } else if (status === "skipped") {
-                          return `${baseClasses} bg-red-100 text-red-800 border border-red-300`
+                          return `${baseClasses} bg-slate-200 text-slate-800 border border-slate-400`
                         } else if (status === "follow-up") {
-                          return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-300`
+                          return `${baseClasses} bg-orange-100 text-orange-800 border border-orange-300`
                         } else {
                           // not-visited
                           if (theme === 'ambient') {
@@ -301,15 +304,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-yellow-100 border border-yellow-300 rounded"></div>
-                    <span className={`text-xs ${
-                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Visited
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-blue-100 border border-blue-300 rounded"></div>
+                    <div className="w-2 h-2 bg-slate-100 border border-slate-300 rounded"></div>
                     <span className={`text-xs ${
                       theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
@@ -317,7 +312,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
+                    <div className="w-2 h-2 bg-slate-200 border border-slate-400 rounded"></div>
                     <span className={`text-xs ${
                       theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                     }`}>
@@ -422,9 +417,9 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                                 } else if (status === "visited") {
                                   return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                                 } else if (status === "skipped") {
-                                  return `${baseClasses} bg-red-100 text-red-800 border border-red-300`
+                                  return `${baseClasses} bg-slate-200 text-slate-800 border border-slate-400`
                                 } else if (status === "follow-up") {
-                                  return `${baseClasses} bg-blue-100 text-blue-800 border border-blue-300`
+                                  return `${baseClasses} bg-orange-100 text-orange-800 border border-orange-300`
                                 } else {
                                   // not-visited
                                   if (theme === 'ambient') {
@@ -460,15 +455,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-yellow-100 border border-yellow-300 rounded"></div>
-                            <span className={`text-xs ${
-                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              Visited
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-blue-300 border border-blue-100 rounded"></div>
+                            <div className="w-2 h-2 bg-orange-100 border border-orange-300 rounded"></div>
                             <span className={`text-xs ${
                               theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                             }`}>
@@ -476,7 +463,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                             </span>
                           </div>
                           <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-red-100 border border-red-300 rounded"></div>
+                            <div className="w-2 h-2 bg-slate-200 border border-slate-400 rounded"></div>
                             <span className={`text-xs ${
                               theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                             }`}>

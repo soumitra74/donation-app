@@ -40,7 +40,6 @@ test.describe('Dashboard', () => {
     
     // Check if legend is displayed
     await expect(page.locator('text=Donated')).toBeVisible();
-    await expect(page.locator('text=Visited')).toBeVisible();
     await expect(page.locator('text=Follow-up')).toBeVisible();
     await expect(page.locator('text=Skip')).toBeVisible();
   });
