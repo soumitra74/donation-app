@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from models import db, Donor, Donation, Campaign
 from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema
+from sqlalchemy import func
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__)
@@ -65,6 +66,83 @@ def create_donation():
         db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
+@api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>', methods=['GET'])
+def get_apartment_donation(tower, floor, unit):
+    """Get donation for a specific apartment"""
+    donation = Donation.query.filter_by(
+        tower=tower, 
+        floor=floor, 
+        unit=unit
+    ).first()
+    
+    if donation:
+        return jsonify(donation_schema.dump(donation))
+    else:
+        return jsonify({'message': 'No donation found for this apartment'}), 404
+
+@api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>', methods=['POST'])
+def create_apartment_donation(tower, floor, unit):
+    """Create a donation for a specific apartment"""
+    data = request.get_json()
+    data.update({
+        'tower': tower,
+        'floor': floor,
+        'unit': unit
+    })
+    
+    try:
+        donation = donation_schema.load(data)
+        db.session.add(donation)
+        db.session.commit()
+        return jsonify(donation_schema.dump(donation)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>/follow-up', methods=['POST'])
+def mark_apartment_follow_up(tower, floor, unit):
+    """Mark an apartment for follow-up"""
+    data = request.get_json()
+    data.update({
+        'tower': tower,
+        'floor': floor,
+        'unit': unit,
+        'status': 'follow-up',
+        'amount': 0,  # Placeholder amount for follow-up
+        'donor_name': data.get('donor_name', 'Follow-up Required')
+    })
+    
+    try:
+        donation = donation_schema.load(data)
+        db.session.add(donation)
+        db.session.commit()
+        return jsonify(donation_schema.dump(donation)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>/skip', methods=['POST'])
+def mark_apartment_skipped(tower, floor, unit):
+    """Mark an apartment as skipped"""
+    data = request.get_json()
+    data.update({
+        'tower': tower,
+        'floor': floor,
+        'unit': unit,
+        'status': 'skipped',
+        'amount': 0,  # Placeholder amount for skipped
+        'donor_name': data.get('donor_name', 'Skipped')
+    })
+    
+    try:
+        donation = donation_schema.load(data)
+        db.session.add(donation)
+        db.session.commit()
+        return jsonify(donation_schema.dump(donation)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
 # Campaign endpoints
 @api_bp.route('/campaigns', methods=['GET'])
 def get_campaigns():
@@ -96,14 +174,28 @@ def create_campaign():
 @api_bp.route('/stats', methods=['GET'])
 def get_stats():
     """Get donation statistics"""
-    total_donations = Donation.query.count()
-    total_amount = db.session.query(db.func.sum(Donation.amount)).scalar() or 0
-    total_donors = Donor.query.count()
-    total_campaigns = Campaign.query.count()
-    
-    return jsonify({
-        'total_donations': total_donations,
-        'total_amount': float(total_amount),
-        'total_donors': total_donors,
-        'total_campaigns': total_campaigns
-    })
+    try:
+        # Total donations
+        total_donations = Donation.query.filter_by(status='completed').count()
+        
+        # Total amount collected
+        total_amount = db.session.query(func.sum(Donation.amount)).filter_by(status='completed').scalar() or 0
+        
+        # Average donation
+        avg_donation = db.session.query(func.avg(Donation.amount)).filter_by(status='completed').scalar() or 0
+        
+        # Follow-ups count
+        follow_ups = Donation.query.filter_by(status='follow-up').count()
+        
+        # Skipped count
+        skipped = Donation.query.filter_by(status='skipped').count()
+        
+        return jsonify({
+            'total_donations': total_donations,
+            'total_amount': float(total_amount),
+            'average_donation': float(avg_donation),
+            'follow_ups': follow_ups,
+            'skipped': skipped
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

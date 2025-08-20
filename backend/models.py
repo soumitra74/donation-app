@@ -46,16 +46,31 @@ class Donation(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
+    
+    # Apartment-specific fields (for frontend compatibility)
+    tower = db.Column(db.Integer, nullable=False)
+    floor = db.Column(db.Integer, nullable=False)
+    unit = db.Column(db.Integer, nullable=False)
+    donor_name = db.Column(db.String(100), nullable=False)  # Direct donor name for apartment donations
+    phone_number = db.Column(db.String(20))
+    head_count = db.Column(db.Integer)
+    upi_other_person = db.Column(db.String(100))
+    sponsorship = db.Column(db.String(200))
+    notes = db.Column(db.Text)
+    volunteer_id = db.Column(db.String(50))
+    volunteer_name = db.Column(db.String(100))
+    
+    # Original fields (for future extensibility)
     message = db.Column(db.Text)
     is_anonymous = db.Column(db.Boolean, default=False)
     payment_method = db.Column(db.String(50))
-    status = db.Column(db.String(20), default='pending')  # pending, completed, failed
+    status = db.Column(db.String(20), default='completed')  # completed, follow-up, skipped, pending
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Foreign keys
-    donor_id = db.Column(db.Integer, db.ForeignKey('donors.id'), nullable=False)
-    campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=False)
+    # Foreign keys (optional for apartment donations)
+    donor_id = db.Column(db.Integer, db.ForeignKey('donors.id'), nullable=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=True)
     
     def __repr__(self):
-        return f'<Donation {self.id} - ${self.amount}>'
+        return f'<Donation {self.id} - {self.donor_name} - ₹{self.amount}>'
