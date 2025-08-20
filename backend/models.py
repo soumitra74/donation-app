@@ -1,5 +1,69 @@
 from app import db
 from datetime import datetime
+import secrets
+import string
+
+class User(db.Model):
+    """User model for authentication"""
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=True)  # Nullable for Google auth
+    google_id = db.Column(db.String(100), unique=True, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    donations = db.relationship('Donation', backref='user', lazy=True)
+    user_roles = db.relationship('UserRole', backref='user', lazy=True, cascade='all, delete-orphan')
+    
+    def __repr__(self):
+        return f'<User {self.email}>'
+
+class Invite(db.Model):
+    """Invite model for user registration"""
+    __tablename__ = 'invites'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    invite_code = db.Column(db.String(32), unique=True, nullable=False)
+    system_password = db.Column(db.String(100), nullable=True)  # Optional system-generated password
+    assigned_towers = db.Column(db.String(200), nullable=True)  # JSON string of tower assignments
+    role = db.Column(db.String(20), default='collector')  # collector, admin
+    is_used = db.Column(db.Boolean, default=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Invite {self.email}>'
+    
+    @staticmethod
+    def generate_invite_code():
+        """Generate a random invite code"""
+        return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+    
+    @staticmethod
+    def generate_system_password():
+        """Generate a random system password"""
+        return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+
+class UserRole(db.Model):
+    """User role model for role-based access control"""
+    __tablename__ = 'user_roles'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # collector, admin
+    assigned_towers = db.Column(db.String(200), nullable=True)  # JSON string of tower assignments
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<UserRole {self.user_id} - {self.role}>'
 
 class Donor(db.Model):
     """Donor model"""
@@ -71,6 +135,7 @@ class Donation(db.Model):
     # Foreign keys (optional for apartment donations)
     donor_id = db.Column(db.Integer, db.ForeignKey('donors.id'), nullable=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Collector
     
     def __repr__(self):
         return f'<Donation {self.id} - {self.donor_name} - ₹{self.amount}>'

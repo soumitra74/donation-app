@@ -16,15 +16,25 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-pro
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///donation_app.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# JWT Configuration
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
+app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID', '')
+
 # Initialize extensions
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 CORS(app)
 
+# Initialize auth service
+from auth import auth_service
+auth_service.init_app(app)
+
 # Import routes after db initialization to avoid circular imports
 from routes import api_bp
+from auth_routes import auth_bp
 
 # Register blueprints
+app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
 app.register_blueprint(api_bp, url_prefix='/api/v1')
 
 @app.route('/')
@@ -33,7 +43,14 @@ def index():
     return jsonify({
         'message': 'Donation App API',
         'version': '1.0.0',
-        'status': 'running'
+        'status': 'running',
+        'auth_endpoints': {
+            'login': '/api/v1/auth/login',
+            'register': '/api/v1/auth/register',
+            'google_auth': '/api/v1/auth/google-auth',
+            'profile': '/api/v1/auth/profile',
+            'invites': '/api/v1/auth/invites'
+        }
     })
 
 @app.route('/health')
@@ -41,18 +58,20 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'database': 'connected' if db.engine.pool.checkedin() >= 0 else 'disconnected'
+        'timestamp': '2024-01-01T00:00:00Z',
+        'version': '1.0.0'
     })
 
 @app.errorhandler(404)
 def not_found(error):
-    """Handle 404 errors"""
+    """404 error handler"""
     return jsonify({'error': 'Not found'}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    """Handle 500 errors"""
+    """500 error handler"""
+    db.session.rollback()
     return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True)

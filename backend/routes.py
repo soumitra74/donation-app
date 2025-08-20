@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
-from models import db, Donor, Donation, Campaign
+from models import db, Donor, Donation, Campaign, User
 from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema
+from auth import require_auth, require_tower_access
 from sqlalchemy import func
 
 # Create API blueprint
@@ -14,18 +15,21 @@ def health():
 
 # Donor endpoints
 @api_bp.route('/donors', methods=['GET'])
+@require_auth
 def get_donors():
     """Get all donors"""
     donors = Donor.query.all()
     return jsonify(donors_schema.dump(donors))
 
 @api_bp.route('/donors/<int:donor_id>', methods=['GET'])
+@require_auth
 def get_donor(donor_id):
     """Get a specific donor"""
     donor = Donor.query.get_or_404(donor_id)
     return jsonify(donor_schema.dump(donor))
 
 @api_bp.route('/donors', methods=['POST'])
+@require_auth
 def create_donor():
     """Create a new donor"""
     data = request.get_json()
@@ -41,23 +45,28 @@ def create_donor():
 
 # Donation endpoints
 @api_bp.route('/donations', methods=['GET'])
+@require_auth
 def get_donations():
     """Get all donations"""
     donations = Donation.query.all()
     return jsonify(donations_schema.dump(donations))
 
 @api_bp.route('/donations/<int:donation_id>', methods=['GET'])
+@require_auth
 def get_donation(donation_id):
     """Get a specific donation"""
     donation = Donation.query.get_or_404(donation_id)
     return jsonify(donation_schema.dump(donation))
 
 @api_bp.route('/donations', methods=['POST'])
+@require_auth
 def create_donation():
     """Create a new donation"""
     data = request.get_json()
     
     try:
+        # Add user ID to donation
+        data['user_id'] = request.user_id
         donation = donation_schema.load(data)
         db.session.add(donation)
         db.session.commit()
@@ -67,6 +76,8 @@ def create_donation():
         return jsonify({'error': str(e)}), 400
 
 @api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>', methods=['GET'])
+@require_auth
+@require_tower_access('tower')
 def get_apartment_donation(tower, floor, unit):
     """Get donation for a specific apartment"""
     donation = Donation.query.filter_by(
@@ -81,13 +92,16 @@ def get_apartment_donation(tower, floor, unit):
         return jsonify({'message': 'No donation found for this apartment'}), 404
 
 @api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>', methods=['POST'])
+@require_auth
+@require_tower_access('tower')
 def create_apartment_donation(tower, floor, unit):
     """Create a donation for a specific apartment"""
     data = request.get_json()
     data.update({
         'tower': tower,
         'floor': floor,
-        'unit': unit
+        'unit': unit,
+        'user_id': request.user_id
     })
     
     try:
@@ -100,6 +114,8 @@ def create_apartment_donation(tower, floor, unit):
         return jsonify({'error': str(e)}), 400
 
 @api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>/follow-up', methods=['POST'])
+@require_auth
+@require_tower_access('tower')
 def mark_apartment_follow_up(tower, floor, unit):
     """Mark an apartment for follow-up"""
     data = request.get_json()
@@ -109,7 +125,8 @@ def mark_apartment_follow_up(tower, floor, unit):
         'unit': unit,
         'status': 'follow-up',
         'amount': 0,  # Placeholder amount for follow-up
-        'donor_name': data.get('donor_name', 'Follow-up Required')
+        'donor_name': data.get('donor_name', 'Follow-up Required'),
+        'user_id': request.user_id
     })
     
     try:
@@ -122,6 +139,8 @@ def mark_apartment_follow_up(tower, floor, unit):
         return jsonify({'error': str(e)}), 400
 
 @api_bp.route('/donations/apartment/<int:tower>/<int:floor>/<int:unit>/skip', methods=['POST'])
+@require_auth
+@require_tower_access('tower')
 def mark_apartment_skipped(tower, floor, unit):
     """Mark an apartment as skipped"""
     data = request.get_json()
@@ -131,7 +150,8 @@ def mark_apartment_skipped(tower, floor, unit):
         'unit': unit,
         'status': 'skipped',
         'amount': 0,  # Placeholder amount for skipped
-        'donor_name': data.get('donor_name', 'Skipped')
+        'donor_name': data.get('donor_name', 'Skipped'),
+        'user_id': request.user_id
     })
     
     try:
@@ -145,18 +165,21 @@ def mark_apartment_skipped(tower, floor, unit):
 
 # Campaign endpoints
 @api_bp.route('/campaigns', methods=['GET'])
+@require_auth
 def get_campaigns():
     """Get all campaigns"""
     campaigns = Campaign.query.all()
     return jsonify(campaigns_schema.dump(campaigns))
 
 @api_bp.route('/campaigns/<int:campaign_id>', methods=['GET'])
+@require_auth
 def get_campaign(campaign_id):
     """Get a specific campaign"""
     campaign = Campaign.query.get_or_404(campaign_id)
     return jsonify(campaign_schema.dump(campaign))
 
 @api_bp.route('/campaigns', methods=['POST'])
+@require_auth
 def create_campaign():
     """Create a new campaign"""
     data = request.get_json()
@@ -172,6 +195,7 @@ def create_campaign():
 
 # Statistics endpoint
 @api_bp.route('/stats', methods=['GET'])
+@require_auth
 def get_stats():
     """Get donation statistics"""
     try:
