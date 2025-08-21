@@ -8,15 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-interface User {
-  id: string
-  email: string
-  name: string
-}
+import { authService, User, UserRole } from "@/services/auth"
 
 interface LoginFormProps {
-  onLogin: (user: User) => void
+  onLogin: (userData: { user: User; roles: UserRole[] }) => void
   theme: 'light' | 'dark' | 'ambient'
   onThemeChange: (theme: 'light' | 'dark' | 'ambient') => void
 }
@@ -25,9 +20,29 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
+  const [inviteCode, setInviteCode] = useState("")
   const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [inviteDetails, setInviteDetails] = useState<any>(null)
+
+  const handleInviteCodeChange = async (code: string) => {
+    setInviteCode(code)
+    if (code.length === 8) {
+      try {
+        const details = await authService.getInviteDetails(code)
+        setInviteDetails(details)
+        setEmail(details.email)
+        setName(details.name)
+      } catch (error) {
+        setInviteDetails(null)
+        setError("Invalid invite code")
+      }
+    } else {
+      setInviteDetails(null)
+      setError("")
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,52 +51,24 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
 
     try {
       if (isSignUp) {
-        // Simple signup - in real app this would be server-side
+        if (!inviteCode) {
+          setError("Invite code is required")
+          return
+        }
+
         if (!name.trim()) {
-          setError("Name is required for signup")
+          setError("Name is required")
           return
         }
 
-        const volunteers = JSON.parse(localStorage.getItem("donation-app-volunteers") || "[]")
-        const existingVolunteer = volunteers.find((v: any) => v.email === email)
-
-        if (existingVolunteer) {
-          setError("Email already registered")
-          return
-        }
-
-        const newVolunteer = {
-          id: Date.now().toString(),
-          email,
-          password, // In real app, this would be hashed
-          name: name.trim(),
-        }
-
-        volunteers.push(newVolunteer)
-        localStorage.setItem("donation-app-volunteers", JSON.stringify(volunteers))
-
-        onLogin({ id: newVolunteer.id, email, name: name.trim() })
+        const response = await authService.register(inviteCode, email, name, password)
+        onLogin(response)
       } else {
-        // Simple login - in real app this would be server-side
-        const volunteers = JSON.parse(localStorage.getItem("donation-app-volunteers") || "[]")
-        console.log("Available volunteers:", volunteers)
-        console.log("Attempting login with:", { email, password })
-        
-        // const volunteer = volunteers.find((v: any) => v.email === email && v.password === password)
-        // hardcoding voluntree for now
-        // TBD remove this after testing
-        const volunteer = {id: "1", email: "soumitraghosh@hotmail.com", name: "Soumitra Ghosh"}
-        console.log("Found volunteer:", volunteer)
-
-        if (!volunteer) {
-          setError("Invalid email or password")
-          return
-        }
-
-        onLogin({ id: volunteer.id, email, name: volunteer.name })
+        const response = await authService.login(email, password)
+        onLogin(response)
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+    } catch (err: any) {
+      setError(err.message || "An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -150,6 +137,27 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
               <div className="space-y-2">
+                <Label htmlFor="inviteCode" className={theme === 'ambient' ? 'text-white' : ''}>Invite Code</Label>
+                <Input
+                  id="inviteCode"
+                  type="text"
+                  value={inviteCode}
+                  onChange={(e) => handleInviteCodeChange(e.target.value)}
+                  required
+                  placeholder="Enter your invite code"
+                  maxLength={8}
+                  className={theme === 'ambient' ? 'bg-white/20 border-white/30 text-white placeholder-white/50' : ''}
+                />
+                {inviteDetails && (
+                  <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
+                    Invite for: {inviteDetails.name} ({inviteDetails.role})
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isSignUp && (
+              <div className="space-y-2">
                 <Label htmlFor="name" className={theme === 'ambient' ? 'text-white' : ''}>Full Name</Label>
                 <Input
                   id="name"
@@ -158,6 +166,7 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Enter your full name"
+                  disabled={!!inviteDetails}
                   className={theme === 'ambient' ? 'bg-white/20 border-white/30 text-white placeholder-white/50' : ''}
                 />
               </div>
@@ -172,6 +181,7 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="Enter your email"
+                disabled={!!inviteDetails}
                 className={theme === 'ambient' ? 'bg-white/20 border-white/30 text-white placeholder-white/50' : ''}
               />
             </div>
@@ -206,6 +216,11 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
               onClick={() => {
                 setIsSignUp(!isSignUp)
                 setError("")
+                setInviteCode("")
+                setInviteDetails(null)
+                setEmail("")
+                setName("")
+                setPassword("")
               }}
               className={`text-sm hover:underline ${
                 theme === 'ambient' ? 'text-white/80 hover:text-white' : 'text-blue-600 hover:text-blue-800'

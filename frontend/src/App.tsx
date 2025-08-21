@@ -1,66 +1,56 @@
 import { useState, useEffect } from 'react'
 import { LoginForm } from './components/login-form'
 import { DonationDashboard } from './components/donation-dashboard'
+import { authService, User, UserRole } from './services/auth'
 import './App.css'
-
-interface User {
-  id: string
-  email: string
-  name: string
-}
 
 type Theme = 'light' | 'dark' | 'ambient'
 
+interface AuthenticatedUser {
+  user: User
+  roles: UserRole[]
+}
+
 function App() {
-  const [user, setUser] = useState<User | null>(null)
+  const [authenticatedUser, setAuthenticatedUser] = useState<AuthenticatedUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [theme, setTheme] = useState<Theme>('light')
 
   useEffect(() => {
-    // Create test user if it doesn't exist
-    const createTestUser = () => {
-      const volunteers = JSON.parse(localStorage.getItem("donation-app-volunteers") || "[]")
-      const existingUser = volunteers.find((v: any) => v.email === "soumitraghosh@hotmail.com")
-      
-      if (!existingUser) {
-        const testUser = {
-          id: "test-user-1",
-          email: "soumitraghosh@hotmail.com",
-          password: "123",
-          name: "Soumitra Ghosh"
+    const initializeApp = async () => {
+      try {
+        // Check if user is authenticated
+        if (authService.isAuthenticated()) {
+          // Verify token by getting user profile
+          const profile = await authService.getProfile()
+          setAuthenticatedUser(profile)
         }
-        
-        volunteers.push(testUser)
-        localStorage.setItem("donation-app-volunteers", JSON.stringify(volunteers))
-        console.log("Test user created:", testUser.email)
+      } catch (error) {
+        console.error('Failed to load user profile:', error)
+        // Token might be invalid, clear it
+        authService.logout()
+      } finally {
+        setLoading(false)
       }
     }
-    
-    createTestUser()
-    
-    // Check if user is logged in
-    const savedUser = localStorage.getItem("donation-app-user")
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-    
-    // Check for saved theme
+
+    // Load saved theme
     const savedTheme = localStorage.getItem("donation-app-theme") as Theme
     if (savedTheme) {
       setTheme(savedTheme)
     }
-    
-    setLoading(false)
+
+    initializeApp()
   }, [])
 
-  const handleLogin = (userData: User) => {
-    setUser(userData)
+  const handleLogin = (userData: { user: User; roles: UserRole[] }) => {
+    setAuthenticatedUser(userData)
     localStorage.setItem("donation-app-user", JSON.stringify(userData))
   }
 
   const handleLogout = () => {
-    setUser(null)
-    localStorage.removeItem("donation-app-user")
+    setAuthenticatedUser(null)
+    authService.logout()
   }
 
   const handleThemeChange = (newTheme: Theme) => {
@@ -76,13 +66,22 @@ function App() {
     )
   }
 
-  // Show login form if user is not logged in
-  if (!user) {
+  // Show login form if user is not authenticated
+  if (!authenticatedUser) {
     return <LoginForm onLogin={handleLogin} theme={theme} onThemeChange={handleThemeChange} />
   }
 
-  // Show dashboard if user is logged in
-  return <DonationDashboard user={user} onLogout={handleLogout} theme={theme} onThemeChange={handleThemeChange} />
+  // Show dashboard if user is authenticated
+  return (
+    <DonationDashboard 
+      user={authenticatedUser.user} 
+      roles={authenticatedUser.roles}
+      onLogout={handleLogout} 
+      theme={theme} 
+      onThemeChange={handleThemeChange} 
+    />
+  )
 }
 
 export default App
+

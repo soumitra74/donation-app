@@ -6,12 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
 import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react"
-
-interface User {
-  id: string
-  email: string
-  name: string
-}
+import { User, UserRole } from "@/services/auth"
 
 interface Donation {
   id: string
@@ -33,12 +28,13 @@ interface Donation {
 
 interface DonationDashboardProps {
   user: User
+  roles: UserRole[]
   onLogout: () => void
   theme: 'light' | 'dark' | 'ambient'
   onThemeChange: (theme: 'light' | 'dark' | 'ambient') => void
 }
 
-export function DonationDashboard({ user, onLogout, theme, onThemeChange }: DonationDashboardProps) {
+export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [showForm, setShowForm] = useState(false)
   const [selectedApartment, setSelectedApartment] = useState<{ tower: number; floor: number; unit: number } | null>(
@@ -46,7 +42,17 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
   )
   const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
 
-  const assignedTowers = [1, 2, 3] // Example: volunteer assigned to towers 1, 2, 3
+  // Get assigned towers from user roles
+  const assignedTowers = roles.reduce((towers: number[], role) => {
+    if (role.role === 'admin') {
+      // Admin has access to all towers
+      return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    }
+    return [...towers, ...role.assigned_towers]
+  }, [])
+
+  // Remove duplicates and sort
+  const uniqueAssignedTowers = [...new Set(assignedTowers)].sort((a, b) => a - b)
 
   useEffect(() => {
     // Load donations from localStorage
@@ -94,11 +100,11 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
   const totalDonors = myDonations.length
 
   const nextTower = () => {
-    setCurrentTowerIndex((prev) => (prev + 1) % assignedTowers.length)
+    setCurrentTowerIndex((prev) => (prev + 1) % uniqueAssignedTowers.length)
   }
 
   const prevTower = () => {
-    setCurrentTowerIndex((prev) => (prev - 1 + assignedTowers.length) % assignedTowers.length)
+    setCurrentTowerIndex((prev) => (prev - 1 + uniqueAssignedTowers.length) % uniqueAssignedTowers.length)
   }
 
   const getThemeClasses = () => {
@@ -228,7 +234,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Desktop Grid Layout */}
         <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {assignedTowers.map((tower) => (
+          {uniqueAssignedTowers.map((tower) => (
             <Card key={tower} className={`overflow-hidden ${
               theme === 'ambient' 
                 ? 'bg-white/10 backdrop-blur-md border-white/20' 
@@ -348,12 +354,12 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                 <h2 className={`text-lg font-semibold ${
                   theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
-                  Block {String.fromCharCode(64 + assignedTowers[currentTowerIndex])}
+                  Block {String.fromCharCode(64 + uniqueAssignedTowers[currentTowerIndex])}
                 </h2>
                 <p className={`text-xs ${
                   theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                 }`}>
-                  {currentTowerIndex + 1} of {assignedTowers.length}
+                  {currentTowerIndex + 1} of {uniqueAssignedTowers.length}
                 </p>
               </div>
               <Button
@@ -378,7 +384,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
                 className="flex transition-transform duration-300 ease-in-out"
                 style={{ transform: `translateX(-${currentTowerIndex * 100}%)` }}
               >
-                {assignedTowers.map((tower) => (
+                {uniqueAssignedTowers.map((tower) => (
                   <div key={tower} className="w-full flex-shrink-0">
                     <Card className={`overflow-hidden ${
                       theme === 'ambient' 
@@ -480,7 +486,7 @@ export function DonationDashboard({ user, onLogout, theme, onThemeChange }: Dona
 
             {/* Carousel Indicators */}
             <div className="flex justify-center mt-4 space-x-2">
-              {assignedTowers.map((_, index) => (
+              {uniqueAssignedTowers.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentTowerIndex(index)}
