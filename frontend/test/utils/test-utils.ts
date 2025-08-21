@@ -9,22 +9,7 @@ export class TestUtils {
   async clearLocalStorage() {
     try {
       await this.page.evaluate(() => {
-        try {
-          localStorage.clear();
-        } catch (e) {
-          console.warn('localStorage.clear() failed:', e);
-          // Fallback: try to clear specific keys
-          try {
-            localStorage.removeItem("donation-app-user");
-            localStorage.removeItem("donation-app-theme");
-            localStorage.removeItem("donation-app-donations");
-            localStorage.removeItem("donation-app-followups");
-            localStorage.removeItem("donation-app-volunteers");
-            localStorage.removeItem("donation-app-skipped");
-          } catch (e2) {
-            console.warn('Could not remove specific localStorage items:', e2);
-          }
-        }
+        localStorage.clear();
       });
     } catch (error) {
       console.warn('Could not execute localStorage clear:', error);
@@ -32,88 +17,96 @@ export class TestUtils {
   }
 
   /**
-   * Login with test credentials
+   * Login with test credentials (using default admin user)
    */
-  async login(email: string = 'soumitraghosh@hotmail.com', password: string = '123') {
+  async login(email: string = 'admin@donationapp.com', password: string = 'admin123') {
     // Fill email and password fields
     await this.page.fill('input[placeholder="Enter your email"]', email);
     await this.page.fill('input[placeholder="Enter your password"]', password);
     await this.page.click('button:has-text("Sign In")');
     
     // Wait for login to complete
-    await this.page.waitForSelector('text=Donation Dashboard', { timeout: 5000 });
+    await this.page.waitForSelector('text=Dashboard', { timeout: 5000 });
+  }
+
+  /**
+   * Register with invite code
+   */
+  async registerWithInvite(inviteCode: string, email: string, name: string, password: string) {
+    // Switch to sign up mode
+    await this.page.click('text=Don\'t have an account? Sign up');
+    
+    // Fill invite code
+    await this.page.fill('input[placeholder="Enter your invite code"]', inviteCode);
+    
+    // Wait for invite details to load
+    await this.page.waitForSelector('text=Invite for:', { timeout: 5000 });
+    
+    // Fill other fields
+    await this.page.fill('input[placeholder="Enter your password"]', password);
+    
+    // Submit registration
+    await this.page.click('button:has-text("Create Account")');
+    
+    // Wait for registration to complete
+    await this.page.waitForSelector('text=Dashboard', { timeout: 5000 });
   }
 
   /**
    * Navigate to donation form for a specific apartment
    */
   async navigateToApartment(tower: number, floor: number, unit: number) {
-    const towerLetter = String.fromCharCode(64 + tower); // A, B, C, etc.
+    const towerLetter = String.fromCharCode(64 + tower);
     const apartmentNumber = `${towerLetter}${floor.toString()}${unit.toString().padStart(2, "0")}`;
     
-    // Click on the apartment button
     await this.page.click(`button:has-text("${apartmentNumber}")`);
-    
-    // Wait for form to load
-    await this.page.waitForSelector('text=Record Donation', { timeout: 5000 });
+    await this.page.waitForSelector('text=Donation Form', { timeout: 5000 });
   }
 
   /**
-   * Fill and submit a donation form
+   * Submit a donation
    */
   async submitDonation(donationData: {
-    amount: string;
     donorName: string;
-    paymentMethod?: 'cash' | 'upi-self' | 'upi-other';
+    amount: string;
     phoneNumber?: string;
     headCount?: string;
+    paymentMethod?: string;
     notes?: string;
   }) {
-    // Fill amount
-    await this.page.fill('input[placeholder="₹ Donation Amount"]', donationData.amount);
+    await this.page.fill('input[placeholder="Donor name"]', donationData.donorName);
+    await this.page.fill('input[placeholder="Amount"]', donationData.amount);
     
-    // Select payment method if specified
-    if (donationData.paymentMethod) {
-      await this.page.click(`button:has-text("${donationData.paymentMethod === 'upi-self' ? 'UPI (self)' : donationData.paymentMethod === 'upi-other' ? 'UPI (other)' : 'Cash'}")`);
-    }
-    
-    // Fill donor name
-    await this.page.fill('input[placeholder="Donor Name"]', donationData.donorName);
-    
-    // Fill optional fields
     if (donationData.phoneNumber) {
-      await this.page.fill('input[placeholder="Phone Number"]', donationData.phoneNumber);
+      await this.page.fill('input[placeholder="Phone number"]', donationData.phoneNumber);
     }
     
     if (donationData.headCount) {
-      await this.page.fill('input[placeholder="Head Count"]', donationData.headCount);
+      await this.page.fill('input[placeholder="Head count"]', donationData.headCount);
+    }
+    
+    if (donationData.paymentMethod) {
+      await this.page.selectOption('select', donationData.paymentMethod);
     }
     
     if (donationData.notes) {
       await this.page.fill('textarea[placeholder="Notes"]', donationData.notes);
     }
     
-    // Submit the form
-    await this.page.click('button:has-text("Record Donation")');
+    await this.page.click('button:has-text("Submit Donation")');
   }
 
   /**
    * Mark apartment for follow-up
    */
-  async markForFollowUp(notes?: string) {
-    if (notes) {
-      await this.page.fill('textarea[placeholder="Notes"]', notes);
-    }
-    await this.page.click('button:has-text("Follow up")');
+  async markForFollowUp() {
+    await this.page.click('button:has-text("Follow Up")');
   }
 
   /**
    * Skip apartment
    */
-  async skipApartment(notes?: string) {
-    if (notes) {
-      await this.page.fill('textarea[placeholder="Notes"]', notes);
-    }
+  async skipApartment() {
     await this.page.click('button:has-text("Skip")');
   }
 
@@ -128,45 +121,32 @@ export class TestUtils {
    * Get apartment status from localStorage
    */
   async getApartmentStatus(tower: number, floor: number, unit: number): Promise<string> {
-    try {
-      return await this.page.evaluate(({ tower, floor, unit }) => {
-        try {
-          // Check donations
-          const donations = JSON.parse(localStorage.getItem("donation-app-donations") || "[]");
-          const donation = donations.find((d: any) => d.tower === tower && d.floor === floor && d.unit === unit);
-          if (donation) return "donated";
+    return await this.page.evaluate(({ tower, floor, unit }) => {
+      const donations = JSON.parse(localStorage.getItem("donation-app-donations") || "[]");
+      const donation = donations.find((d: any) => d.tower === tower && d.floor === floor && d.unit === unit);
+      if (donation) return "donated";
 
-          // Check follow-ups
-          const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]");
-          const followUp = followUps.find((f: any) => f.tower === tower && f.floor === floor && f.unit === unit);
-          if (followUp) return "follow-up";
+      const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]");
+      const followUp = followUps.find((f: any) => f.tower === tower && f.floor === floor && f.unit === unit);
+      if (followUp) return "follow-up";
 
-          // Check skipped
-          const skipped = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]");
-          const skip = skipped.find((s: any) => s.tower === tower && s.floor === floor && s.unit === unit);
-          if (skip) return "skipped";
+      const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]");
+      const skipped = skippedApartments.find((s: any) => s.tower === tower && s.floor === floor && s.unit === unit);
+      if (skipped) return "skipped";
 
-          return "not-visited";
-        } catch (e) {
-          console.warn('Error accessing localStorage:', e);
-          return "not-visited";
-        }
-      }, { tower, floor, unit });
-    } catch (error) {
-      console.warn('Could not get apartment status from localStorage:', error);
+      const apartmentKey = `${tower}-${floor}-${unit}`;
+      const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]");
+      if (visitedApartments.includes(apartmentKey)) return "visited";
+      
       return "not-visited";
-    }
+    }, { tower, floor, unit });
   }
 
   /**
-   * Wait for transition overlay to disappear
+   * Wait for transition to complete
    */
   async waitForTransitionComplete() {
-    try {
-      await this.page.waitForSelector('.absolute.inset-0.bg-black\\/50', { state: 'hidden', timeout: 10000 });
-    } catch (error) {
-      console.warn('Transition overlay not found or already hidden:', error);
-    }
+    await this.page.waitForTimeout(2000); // Wait for transition animation
   }
 
   /**
@@ -174,7 +154,7 @@ export class TestUtils {
    */
   async isVisible(selector: string): Promise<boolean> {
     try {
-      await this.page.waitForSelector(selector, { timeout: 2000 });
+      await this.page.waitForSelector(selector, { timeout: 1000 });
       return true;
     } catch {
       return false;
@@ -182,13 +162,10 @@ export class TestUtils {
   }
 
   /**
-   * Take a screenshot with timestamp
+   * Take a screenshot
    */
   async takeScreenshot(name: string) {
-    await this.page.screenshot({ 
-      path: `test-results/${name}-${Date.now()}.png`,
-      fullPage: true 
-    });
+    await this.page.screenshot({ path: `test-results/${name}.png` });
   }
 }
 
