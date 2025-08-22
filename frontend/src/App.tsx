@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { LoginForm } from './components/login-form'
 import { DonationDashboard } from './components/donation-dashboard'
 import { authService, User, UserRole } from './services/auth'
+import { donationsService } from './services/donations'
 import './App.css'
 
 type Theme = 'light' | 'dark' | 'ambient'
@@ -24,11 +25,17 @@ function App() {
           // Verify token by getting user profile
           const profile = await authService.getProfile()
           setAuthenticatedUser(profile)
+          // Sync token with donations service
+          const token = authService.getToken()
+          if (token) {
+            donationsService.updateToken(token)
+          }
         }
       } catch (error) {
         console.error('Failed to load user profile:', error)
         // Token might be invalid, clear it
         authService.logout()
+        donationsService.clearToken()
       } finally {
         setLoading(false)
       }
@@ -46,11 +53,18 @@ function App() {
   const handleLogin = (userData: { user: User; roles: UserRole[] }) => {
     setAuthenticatedUser(userData)
     localStorage.setItem("donation-app-user", JSON.stringify(userData))
+    // Sync token with donations service
+    const token = authService.getToken()
+    if (token) {
+      donationsService.updateToken(token)
+    }
   }
 
   const handleLogout = () => {
     setAuthenticatedUser(null)
     authService.logout()
+    // Clear token from donations service
+    donationsService.clearToken()
   }
 
   const handleThemeChange = (newTheme: Theme) => {

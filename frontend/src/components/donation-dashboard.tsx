@@ -5,26 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChangePassword } from "@/components/change-password"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Settings } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
-
-interface Donation {
-  id: string
-  donorName: string
-  amount: number
-  tower: number
-  floor: number
-  unit: number
-  phoneNumber?: string
-  headCount?: number
-  volunteerId: string
-  volunteerName: string
-  timestamp: string
-  paymentMethod?: string
-  upiPerson?: string
-  sponsorship?: string
-  notes?: string
-}
+import { donationsService, Donation, DonationStats } from "@/services/donations"
 
 interface DonationDashboardProps {
   user: User
@@ -36,17 +20,20 @@ interface DonationDashboardProps {
 
 export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
+  const [stats, setStats] = useState<DonationStats | null>(null)
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedApartment, setSelectedApartment] = useState<{ tower: number; floor: number; unit: number } | null>(
     null,
   )
   const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   // Get assigned towers from user roles
   const assignedTowers = roles.reduce((towers: number[], role) => {
     if (role.role === 'admin') {
       // Admin has access to all towers
-      return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      return [1, 2, 3, 4, 5, 6, 7, 8, 10]
     }
     return [...towers, ...role.assigned_towers]
   }, [])
@@ -55,33 +42,61 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
   const uniqueAssignedTowers = [...new Set(assignedTowers)].sort((a, b) => a - b)
 
   useEffect(() => {
-    // Load donations from localStorage
-    const savedDonations = localStorage.getItem("donation-app-donations")
-    if (savedDonations) {
-      setDonations(JSON.parse(savedDonations))
+    const loadDonations = async () => {
+      try {
+        setLoading(true)
+        const [donationsData, statsData] = await Promise.all([
+          donationsService.getMyDonations(parseInt(user.id)),
+          donationsService.getStats()
+        ])
+        setDonations(donationsData)
+        setStats(statsData)
+      } catch (error) {
+        console.error('Failed to load donations:', error)
+        // Fallback to localStorage if API fails
+        const savedDonations = localStorage.getItem("donation-app-donations")
+        if (savedDonations) {
+          setDonations(JSON.parse(savedDonations))
+        }
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [])
+
+    loadDonations()
+  }, [user.id])
 
   const getApartmentStatus = (tower: number, floor: number, unit: number) => {
     const donation = donations.find((d) => d.tower === tower && d.floor === floor && d.unit === unit)
-    if (donation) return "donated"
+    if (donation) {
+      if (donation.status === 'completed') return "donated"
+      if (donation.status === 'follow-up') return "follow-up"
+      if (donation.status === 'skipped') return "skipped"
+      return "donated" // Default to donated for other statuses
+    }
 
-    // Check for follow-up status
-    const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]")
-    const followUp = followUps.find((f: any) => f.tower === tower && f.floor === floor && f.unit === unit)
-    if (followUp) return "follow-up"
-
-    // Check for skipped status
-    const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]")
-    const skipped = skippedApartments.find((s: any) => s.tower === tower && s.floor === floor && s.unit === unit)
-    if (skipped) return "skipped"
-
-    // Mock logic for visited apartments (would come from backend)
+    // Fallback to localStorage for visited apartments (temporary)
     const apartmentKey = `${tower}-${floor}-${unit}`
     const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]")
-
     if (visitedApartments.includes(apartmentKey)) return "visited"
+    
     return "not-visited"
+  }
+
+  const refreshDonations = async () => {
+    try {
+      setLoading(true)
+      const [donationsData, statsData] = await Promise.all([
+        donationsService.getMyDonations(parseInt(user.id)),
+        donationsService.getStats()
+      ])
+      setDonations(donationsData)
+      setStats(statsData)
+    } catch (error) {
+      console.error('Failed to refresh donations:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getApartmentNumber = (tower: number, floor: number, unit: number) => {
@@ -95,9 +110,8 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
     setShowForm(true)
   }
 
-  const myDonations = donations.filter((d) => d.volunteerId === user.id)
-  const totalAmount = myDonations.reduce((sum, d) => sum + d.amount, 0)
-  const totalDonors = myDonations.length
+  const totalAmount = donations.reduce((sum, d) => sum + d.amount, 0)
+  const totalDonors = donations.length
 
   const nextTower = () => {
     setCurrentTowerIndex((prev) => (prev + 1) % uniqueAssignedTowers.length)
@@ -126,6 +140,7 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
       }}
       preselectedApartment={selectedApartment}
       user={user}
+      onDonationCreated={refreshDonations}
     />
   }
 
@@ -196,10 +211,16 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
                 Welcome back, {user.name}
               </p>
             </div>
-            <Button variant="outline" onClick={onLogout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setShowChangePassword(true)}>
+                <Settings className="h-4 w-4 mr-2" />
+                Change Password
+              </Button>
+              <Button variant="outline" onClick={onLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -523,12 +544,16 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
               <div className={`text-2xl font-bold ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                ₹{totalAmount.toLocaleString()}
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-24 rounded"></div>
+                ) : (
+                  `₹${stats ? stats.total_amount.toLocaleString() : totalAmount.toLocaleString()}`
+                )}
               </div>
               <p className={`text-xs ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
-                From {totalDonors} donations
+                From {stats ? stats.total_donations : totalDonors} donations
               </p>
             </CardContent>
           </Card>
@@ -544,14 +569,18 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
               <CardTitle className={`text-sm font-medium ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Donations Count
+                My Donations
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                {totalDonors}
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
+                ) : (
+                  totalDonors
+                )}
               </div>
               <p className={`text-xs ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -579,7 +608,11 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
               <div className={`text-2xl font-bold ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                ₹{totalDonors > 0 ? Math.round(totalAmount / totalDonors) : 0}
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                ) : (
+                  `₹${stats ? Math.round(stats.average_donation) : (totalDonors > 0 ? Math.round(totalAmount / totalDonors) : 0)}`
+                )}
               </div>
               <p className={`text-xs ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -626,7 +659,7 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {myDonations.length === 0 ? (
+            {donations.length === 0 ? (
               <p className={`text-center py-8 ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
@@ -634,10 +667,10 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
               </p>
             ) : (
               <div className="space-y-4">
-                {myDonations
-                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                {donations
+                  .sort((a: Donation, b: Donation) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
                   .slice(0, 10)
-                  .map((donation) => (
+                  .map((donation: Donation) => (
                     <div key={donation.id} className={`flex items-center justify-between p-4 border rounded-lg ${
                       theme === 'ambient' 
                         ? 'bg-white/5 border-white/10' 
@@ -650,7 +683,7 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
                           <span className={`font-medium ${
                             theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
                           }`}>
-                            {donation.donorName}
+                            {donation.donor_name}
                           </span>
                           <Badge variant="secondary">
                             {getApartmentNumber(donation.tower, donation.floor, donation.unit)}
@@ -659,16 +692,16 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
                         <p className={`text-sm ${
                           theme === 'ambient' ? 'text-white/70' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                         }`}>
-                          {new Date(donation.timestamp).toLocaleDateString()} at{" "}
-                          {new Date(donation.timestamp).toLocaleTimeString()}
+                          {new Date(donation.created_at).toLocaleDateString()} at{" "}
+                          {new Date(donation.created_at).toLocaleTimeString()}
                         </p>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-semibold text-green-600">₹{donation.amount}</div>
-                        {donation.headCount && <p className={`text-xs ${
+                        {donation.head_count && <p className={`text-xs ${
                           theme === 'ambient' ? 'text-white/50' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                         }`}>
-                          {donation.headCount} people
+                          {donation.head_count} people
                         </p>}
                       </div>
                     </div>
@@ -696,6 +729,14 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
           </Button>
         </div>
       </main>
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePassword
+          onSuccess={() => setShowChangePassword(false)}
+          onCancel={() => setShowChangePassword(false)}
+        />
+      )}
     </div>
   )
 }

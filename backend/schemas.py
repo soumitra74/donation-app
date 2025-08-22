@@ -65,6 +65,10 @@ class GoogleAuthSchema(Schema):
     google_token = fields.Str(required=True)
     invite_code = fields.Str(required=True, validate=Length(equal=8))
 
+class ChangePasswordSchema(Schema):
+    current_password = fields.Str(required=True)
+    new_password = fields.Str(required=True, validate=Length(min=6, max=100))
+
 # Base schemas using SQLAlchemyAutoSchema
 class DonorSchema(SQLAlchemyAutoSchema):
     class Meta:
@@ -130,6 +134,7 @@ user_roles_schema = UserRoleSchema(many=True)
 register_schema = RegisterSchema()
 login_schema = LoginSchema()
 google_auth_schema = GoogleAuthSchema()
+change_password_schema = ChangePasswordSchema()
 
 donor_schema = DonorSchema()
 donors_schema = DonorSchema(many=True)

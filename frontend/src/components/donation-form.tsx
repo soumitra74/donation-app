@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { donationsService, CreateDonationData } from "@/services/donations"
 
 interface Donation {
   donorName: string
@@ -35,9 +36,10 @@ interface DonationFormProps {
     id: string
     name: string
   }
+  onDonationCreated?: () => void
 }
 
-export function DonationForm({ onCancel, preselectedApartment, user }: DonationFormProps) {
+export function DonationForm({ onCancel, preselectedApartment, user, onDonationCreated }: DonationFormProps) {
   const [currentApartment, setCurrentApartment] = useState({
     tower: preselectedApartment?.tower || 1,
     floor: preselectedApartment?.floor || 1,
@@ -98,6 +100,11 @@ export function DonationForm({ onCancel, preselectedApartment, user }: DonationF
   }
 
   const navigateNext = () => {
+    if(lastApartmentInTower()) {
+      //go to home screen and show a message that this is the last apartment in the tower
+      onCancel()
+      return
+    }
     setCurrentApartment((prev) => {
       let { tower, floor, unit } = prev
 
@@ -118,108 +125,187 @@ export function DonationForm({ onCancel, preselectedApartment, user }: DonationF
     })
   }
 
+  const lastApartmentInTower = () => {
+    return currentApartment.unit === 4 && currentApartment.floor === 14
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const donation: Donation = {
-      donorName: formData.donorName.trim(),
+    const donationData: CreateDonationData = {
+      donor_name: formData.donorName.trim(),
       amount: Number.parseFloat(formData.amount),
       tower: currentApartment.tower,
       floor: currentApartment.floor,
       unit: currentApartment.unit,
-      phoneNumber: formData.phoneNumber.trim() || undefined,
-      headCount: formData.headCount ? Number.parseInt(formData.headCount) : undefined,
-      paymentMethod: formData.paymentMethod,
-      upiOtherPerson: formData.paymentMethod === "upi-other" ? formData.upiOtherPerson : undefined,
+      phone_number: formData.phoneNumber.trim() || undefined,
+      head_count: formData.headCount ? Number.parseInt(formData.headCount) : undefined,
+      payment_method: formData.paymentMethod,
+      upi_other_person: formData.paymentMethod === "upi-other" ? formData.upiOtherPerson : undefined,
       sponsorship: formData.sponsorship || undefined,
       notes: formData.notes.trim() || undefined,
     }
 
-    // Save donation locally (similar to follow-up)
-    const newDonation = {
-      ...donation,
-      id: Date.now().toString(),
-      volunteerId: user?.id || "1", // You can pass this as prop if needed
-      volunteerName: user?.name || "Volunteer", // You can pass this as prop if needed
-      timestamp: new Date().toISOString(),
-    }
+    try {
+      // Save donation to API
+      await donationsService.createApartmentDonation(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit,
+        donationData
+      )
+      
+      console.log("Donation saved for apartment:", getFlatNumber())
+      
+      // Notify parent component to refresh data
+      if (onDonationCreated) {
+        onDonationCreated()
+      }
+      
+      // Show success message and transition to next apartment
+      setIsTransitioning(true)
+      setTransitionMessage("Donation recorded! Moving to next apartment...")
+      
+      setTimeout(() => {
+        navigateToNextApartment()
+        setIsTransitioning(false)
+        setTransitionMessage("")
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to save donation:', error)
+      // Fallback to localStorage if API fails
+      const newDonation = {
+        ...donationData,
+        id: Date.now().toString(),
+        volunteerId: user?.id || "1",
+        volunteerName: user?.name || "Volunteer",
+        timestamp: new Date().toISOString(),
+      }
 
-    // Save to localStorage
-    const savedDonations = JSON.parse(localStorage.getItem("donation-app-donations") || "[]")
-    savedDonations.push(newDonation)
-    localStorage.setItem("donation-app-donations", JSON.stringify(savedDonations))
-    
-    console.log("Donation saved for apartment:", getFlatNumber())
-    
-    // Show success message and transition to next apartment
-    setIsTransitioning(true)
-    setTransitionMessage("Donation recorded! Moving to next apartment...")
-    
-    setTimeout(() => {
-      navigateToNextApartment()
-      setIsTransitioning(false)
-      setTransitionMessage("")
-    }, 1500)
+      const savedDonations = JSON.parse(localStorage.getItem("donation-app-donations") || "[]")
+      savedDonations.push(newDonation)
+      localStorage.setItem("donation-app-donations", JSON.stringify(savedDonations))
+      
+      // Show success message and transition to next apartment
+      setIsTransitioning(true)
+      setTransitionMessage("Donation recorded! Moving to next apartment...")
+      
+      setTimeout(() => {
+        navigateToNextApartment()
+        setIsTransitioning(false)
+        setTransitionMessage("")
+      }, 1500)
+    }
   }
 
   const handleFollowUp = async () => {
-    // Save follow up information (you can extend this as needed)
-    const followUpData = {
-      apartment: getFlatNumber(),
-      tower: currentApartment.tower,
-      floor: currentApartment.floor,
-      unit: currentApartment.unit,
-      timestamp: new Date().toISOString(),
-      status: 'follow-up',
-      notes: formData.notes || 'Marked for follow up'
+    try {
+      // Save follow up to API
+      await donationsService.markApartmentFollowUp(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit,
+        formData.notes || 'Marked for follow up'
+      )
+      
+      console.log("Follow up saved for apartment:", getFlatNumber())
+      
+      // Notify parent component to refresh data
+      if (onDonationCreated) {
+        onDonationCreated()
+      }
+      
+      // Show success message and transition to next apartment
+      setIsTransitioning(true)
+      setTransitionMessage("Follow up saved! Moving to next apartment...")
+      
+      setTimeout(() => {
+        navigateToNextApartment()
+        setIsTransitioning(false)
+        setTransitionMessage("")
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to save follow up:', error)
+      // Fallback to localStorage if API fails
+      const followUpData = {
+        apartment: getFlatNumber(),
+        tower: currentApartment.tower,
+        floor: currentApartment.floor,
+        unit: currentApartment.unit,
+        timestamp: new Date().toISOString(),
+        status: 'follow-up',
+        notes: formData.notes || 'Marked for follow up'
+      }
+      
+      const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]")
+      followUps.push(followUpData)
+      localStorage.setItem("donation-app-followups", JSON.stringify(followUps))
+      
+      // Show success message and transition to next apartment
+      setIsTransitioning(true)
+      setTransitionMessage("Follow up saved! Moving to next apartment...")
+      
+      setTimeout(() => {
+        navigateToNextApartment()
+        setIsTransitioning(false)
+        setTransitionMessage("")
+      }, 1500)
     }
-    
-    // Save to localStorage (you can modify this to save to backend)
-    const followUps = JSON.parse(localStorage.getItem("donation-app-followups") || "[]")
-    followUps.push(followUpData)
-    localStorage.setItem("donation-app-followups", JSON.stringify(followUps))
-    
-    console.log("Follow up saved for apartment:", getFlatNumber())
-    
-    // Show success message and transition to next apartment
-    setIsTransitioning(true)
-    setTransitionMessage("Follow up saved! Moving to next apartment...")
-    
-    setTimeout(() => {
-      navigateToNextApartment()
-      setIsTransitioning(false)
-      setTransitionMessage("")
-    }, 1500)
   }
 
   const handleSkip = async () => {
-    // Save skip information
-    const skipData = {
-      apartment: getFlatNumber(),
-      tower: currentApartment.tower,
-      floor: currentApartment.floor,
-      unit: currentApartment.unit,
-      timestamp: new Date().toISOString(),
-      status: 'skipped',
-      notes: formData.notes || 'Skipped apartment'
+    try {
+      // Save skip to API
+      await donationsService.markApartmentSkipped(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit,
+        formData.notes || 'Skipped apartment'
+      )
+      
+      console.log("Skip saved for apartment:", getFlatNumber())
+      
+      // Notify parent component to refresh data
+      if (onDonationCreated) {
+        onDonationCreated()
+      }
+      
+      // Show success message and transition to next apartment
+      setIsTransitioning(true)
+      setTransitionMessage("Apartment skipped! Moving to next apartment...")
+      
+      setTimeout(() => {
+        navigateToNextApartment()
+        setIsTransitioning(false)
+        setTransitionMessage("")
+      }, 1500)
+    } catch (error) {
+      console.error('Failed to save skip:', error)
+      // Fallback to localStorage if API fails
+      const skipData = {
+        apartment: getFlatNumber(),
+        tower: currentApartment.tower,
+        floor: currentApartment.floor,
+        unit: currentApartment.unit,
+        timestamp: new Date().toISOString(),
+        status: 'skipped',
+        notes: formData.notes || 'Skipped apartment'
+      }
+      
+      const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]")
+      skippedApartments.push(skipData)
+      localStorage.setItem("donation-app-skipped", JSON.stringify(skippedApartments))
+      
+      // Show success message and transition to next apartment
+      setIsTransitioning(true)
+      setTransitionMessage("Apartment skipped! Moving to next apartment...")
+      
+      setTimeout(() => {
+        navigateToNextApartment()
+        setIsTransitioning(false)
+        setTransitionMessage("")
+      }, 1500)
     }
-    
-    // Save to localStorage
-    const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]")
-    skippedApartments.push(skipData)
-    localStorage.setItem("donation-app-skipped", JSON.stringify(skippedApartments))
-    
-    console.log("Skip saved for apartment:", getFlatNumber())
-    
-    // Show success message and transition to next apartment
-    setIsTransitioning(true)
-    setTransitionMessage("Apartment skipped! Moving to next apartment...")
-    
-    setTimeout(() => {
-      navigateToNextApartment()
-      setIsTransitioning(false)
-      setTransitionMessage("")
-    }, 1500)
   }
 
   const navigateToNextApartment = () => {

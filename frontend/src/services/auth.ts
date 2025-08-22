@@ -148,6 +148,16 @@ class AuthService {
     return await this.makeRequest('/auth/users')
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return await this.makeRequest('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    })
+  }
+
   logout(): void {
     this.token = null
     localStorage.removeItem('donation-app-token')

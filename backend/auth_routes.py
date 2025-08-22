@@ -5,7 +5,7 @@ Handles login, registration, invite management, and Google OAuth
 
 from flask import Blueprint, request, jsonify
 from models import User, Invite, UserRole, db
-from schemas import register_schema, login_schema, google_auth_schema, invite_schema, invites_schema, user_schema
+from schemas import register_schema, login_schema, google_auth_schema, invite_schema, invites_schema, user_schema, change_password_schema
 from auth import auth_service, require_auth, require_role
 from datetime import datetime, timedelta
 import json
@@ -210,6 +210,40 @@ def get_profile():
         'user': user_schema.dump(user),
         'roles': roles
     }), 200
+
+@auth_bp.route('/change-password', methods=['POST'])
+@require_auth
+def change_password():
+    """Change user password"""
+    data = request.get_json()
+    
+    try:
+        # Validate password change data
+        validated_data = change_password_schema.load(data)
+        
+        # Get user
+        user = User.query.get(request.user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Verify current password
+        if not auth_service.verify_password(validated_data['current_password'], user.password_hash):
+            return jsonify({'error': 'Current password is incorrect'}), 401
+        
+        # Hash new password
+        new_password_hash = auth_service.hash_password(validated_data['new_password'])
+        
+        # Update password
+        user.password_hash = new_password_hash.decode('utf-8')
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Password changed successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 @auth_bp.route('/invites', methods=['POST'])
 @require_auth

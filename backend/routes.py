@@ -48,7 +48,16 @@ def create_donor():
 @require_auth
 def get_donations():
     """Get all donations"""
-    donations = Donation.query.all()
+    # Get user_id from query parameter to filter by user
+    user_id = request.args.get('user_id', type=int)
+    
+    if user_id:
+        # Filter donations by user_id
+        donations = Donation.query.filter_by(user_id=user_id).all()
+    else:
+        # Get all donations (for admin users)
+        donations = Donation.query.all()
+    
     return jsonify(donations_schema.dump(donations))
 
 @api_bp.route('/donations/<int:donation_id>', methods=['GET'])
