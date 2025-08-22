@@ -3,19 +3,18 @@ import { LoginForm } from './components/login-form'
 import { DonationDashboard } from './components/donation-dashboard'
 import { authService, User, UserRole } from './services/auth'
 import { donationsService } from './services/donations'
+import { ThemeProvider, useTheme } from './components/theme-provider'
 import './App.css'
-
-type Theme = 'light' | 'dark' | 'ambient'
 
 interface AuthenticatedUser {
   user: User
   roles: UserRole[]
 }
 
-function App() {
+function AppContent() {
   const [authenticatedUser, setAuthenticatedUser] = useState<AuthenticatedUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [theme, setTheme] = useState<Theme>('light')
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -41,12 +40,6 @@ function App() {
       }
     }
 
-    // Load saved theme
-    const savedTheme = localStorage.getItem("donation-app-theme") as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
-    }
-
     initializeApp()
   }, [])
 
@@ -67,9 +60,8 @@ function App() {
     donationsService.clearToken()
   }
 
-  const handleThemeChange = (newTheme: Theme) => {
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'ambient') => {
     setTheme(newTheme)
-    localStorage.setItem("donation-app-theme", newTheme)
   }
 
   if (loading) {
@@ -94,6 +86,14 @@ function App() {
       theme={theme} 
       onThemeChange={handleThemeChange} 
     />
+  )
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   )
 }
 

@@ -1,8 +1,10 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 from models import db, Donor, Donation, Campaign, User
 from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema
 from auth import require_auth, require_tower_access
 from sqlalchemy import func
+from excel_export import export_donations_to_excel
+from datetime import datetime
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__)
@@ -232,3 +234,24 @@ def get_stats():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Excel Export endpoint
+@api_bp.route('/export/excel', methods=['GET'])
+@require_auth
+def export_excel():
+    """Export all donations to Excel file"""
+    try:
+        excel_file = export_donations_to_excel()
+        
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"donation_report_{timestamp}.xlsx"
+        
+        return send_file(
+            excel_file,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        return jsonify({'error': f'Failed to generate Excel file: {str(e)}'}), 500

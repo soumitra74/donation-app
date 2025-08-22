@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { authService, User, UserRole } from "@/services/auth"
 
 interface LoginFormProps {
@@ -95,23 +96,9 @@ export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
         </>
       )}
       
-      {/* Theme Selector */}
+      {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-10">
-        <div className="flex bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
-          {(['light', 'dark', 'ambient'] as const).map((themeOption) => (
-            <button
-              key={themeOption}
-              onClick={() => onThemeChange(themeOption)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                theme === themeOption
-                  ? 'bg-white/20 text-white shadow-sm'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
-            </button>
-          ))}
-        </div>
+        <ThemeToggle />
       </div>
 
       <Card className={`w-full max-w-md relative z-10 ${

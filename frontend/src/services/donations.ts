@@ -174,6 +174,53 @@ class DonationsService {
     return await this.makeRequest(`/donations?user_id=${userId}`)
   }
 
+  // Export donations to Excel
+  async exportToExcel(): Promise<void> {
+    const url = `${API_BASE_URL}/export/excel`
+    
+    const config: RequestInit = {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+    }
+
+    try {
+      const response = await fetch(url, config)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob()
+      
+      // Create a download link
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      
+      // Get filename from response headers or use default
+      const contentDisposition = response.headers.get('content-disposition')
+      let filename = 'donation_report.xlsx'
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/)
+        if (filenameMatch) {
+          filename = filenameMatch[1]
+        }
+      }
+      
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      console.error('Excel export failed:', error)
+      throw error
+    }
+  }
+
   // Update token (called when user logs in)
   updateToken(token: string): void {
     this.token = token

@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
 import { ChangePassword } from "@/components/change-password"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Settings } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Settings, Download } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
 import { donationsService, Donation, DonationStats } from "@/services/donations"
 
@@ -28,6 +29,7 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
   )
   const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
   const [showChangePassword, setShowChangePassword] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   // Get assigned towers from user roles
   const assignedTowers = roles.reduce((towers: number[], role) => {
@@ -99,6 +101,18 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
     }
   }
 
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true)
+      await donationsService.exportToExcel()
+    } catch (error) {
+      console.error('Failed to export Excel:', error)
+      alert('Failed to export Excel file. Please try again.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const getApartmentNumber = (tower: number, floor: number, unit: number) => {
     const towerLetter = String.fromCharCode(64 + tower) // A, B, C, etc.
     return `${towerLetter}${floor.toString()}${unit.toString().padStart(2, "0")}`
@@ -156,38 +170,7 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
         </>
       )}
 
-      {/* Theme Selector */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className={`flex rounded-lg p-1 border transition-all ${
-          theme === 'ambient' 
-            ? 'bg-white/10 backdrop-blur-md border-white/20' 
-            : theme === 'dark'
-            ? 'bg-gray-800 border-gray-600'
-            : 'bg-white border-gray-200 shadow-sm'
-        }`}>
-          {(['light', 'dark', 'ambient'] as const).map((themeOption) => (
-            <button
-              key={themeOption}
-              onClick={() => onThemeChange(themeOption)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                theme === themeOption
-                  ? theme === 'ambient' 
-                    ? 'bg-white/20 text-white shadow-sm'
-                    : theme === 'dark'
-                    ? 'bg-gray-700 text-white shadow-sm'
-                    : 'bg-blue-600 text-white shadow-sm'
-                  : theme === 'ambient'
-                  ? 'text-white/70 hover:text-white hover:bg-white/10'
-                  : theme === 'dark'
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              {themeOption.charAt(0).toUpperCase() + themeOption.slice(1)}
-            </button>
-          ))}
-        </div>
-      </div>
+
 
       {/* Header - Hidden on mobile */}
       <header className={`shadow-sm border-b hidden sm:block relative z-10 ${
@@ -211,6 +194,12 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
                 Welcome back, {user.name}
               </p>
             </div>
+            
+            {/* Centered Theme Toggle */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <ThemeToggle />
+            </div>
+            
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowChangePassword(true)}>
                 <Settings className="h-4 w-4 mr-2" />
@@ -233,23 +222,29 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
           ? 'bg-gray-800 border-gray-700'
           : 'bg-white border-gray-200'
       }`}>
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className={`text-lg font-semibold ${
-              theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }`}>
-              Dashboard
-            </h1>
-            <p className={`text-xs ${
-              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-            }`}>
-              {user.name}
-            </p>
+                  <div className="flex justify-between items-center">
+            <div>
+              <h1 className={`text-lg font-semibold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Dashboard
+              </h1>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                {user.name}
+              </p>
+            </div>
+            
+            {/* Centered Theme Toggle */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+              <ThemeToggle />
+            </div>
+            
+            <Button variant="outline" size="sm" onClick={onLogout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={onLogout}>
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -647,16 +642,36 @@ export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange 
             : 'bg-white'
         }`}>
           <CardHeader>
-            <CardTitle className={
-              theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
-            }>
-              Recent Donations
-            </CardTitle>
-            <CardDescription className={
-              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-            }>
-              Your latest donation records
-            </CardDescription>
+            <div className="flex justify-between items-start">
+              <div>
+                <CardTitle className={
+                  theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+                }>
+                  Recent Donations
+                </CardTitle>
+                <CardDescription className={
+                  theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                }>
+                  Your latest donation records
+                </CardDescription>
+              </div>
+              <Button
+                onClick={handleExportExcel}
+                disabled={exporting}
+                variant="outline"
+                size="sm"
+                className={`${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exporting ? 'Exporting...' : 'Export Excel'}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {donations.length === 0 ? (
