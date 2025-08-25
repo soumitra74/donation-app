@@ -10,7 +10,7 @@ class ExcelExporter:
     def __init__(self):
         self.workbook = Workbook()
         self.ws = self.workbook.active
-        self.ws.title = "Metadata"
+        self.ws.title = "Summary"
         
         # Define styles
         self.header_font = Font(bold=True, color="FFFFFF")
@@ -116,6 +116,7 @@ class ExcelExporter:
 
     def create_tower_sheets(self):
         """Create individual sheets for each tower"""
+        sheets_created = 0
         for tower in range(1, 11):  # Towers 1-10
             tower_donations = self._get_tower_donations(tower)
             if not tower_donations:
@@ -123,6 +124,7 @@ class ExcelExporter:
                 
             # Create new sheet
             ws = self.workbook.create_sheet(f"Tower {chr(64 + tower)}")
+            sheets_created += 1
             
             # Title
             ws['A1'] = f"TOWER {chr(64 + tower)} - DONATION DETAILS"
@@ -249,19 +251,28 @@ class ExcelExporter:
 
     def generate_excel(self):
         """Generate the complete Excel file"""
-        self.create_metadata_sheet()
-        self.create_tower_sheets()
-        
-        # Remove the default sheet if it's empty
-        if len(self.workbook.sheetnames) > 1:
-            self.workbook.remove(self.workbook['Sheet'])
-        
-        # Save to bytes
-        excel_file = io.BytesIO()
-        self.workbook.save(excel_file)
-        excel_file.seek(0)
-        
-        return excel_file
+        try:
+            self.create_metadata_sheet()
+            self.create_tower_sheets()
+            
+            # Remove the default sheet if it exists and we have other sheets
+            if 'Sheet' in self.workbook.sheetnames and len(self.workbook.sheetnames) > 1:
+                self.workbook.remove(self.workbook['Sheet'])
+            
+            # Ensure we have at least one sheet
+            if len(self.workbook.sheetnames) == 0:
+                raise Exception("No sheets were created for the Excel file")
+            
+            # Save to bytes
+            excel_file = io.BytesIO()
+            self.workbook.save(excel_file)
+            excel_file.seek(0)
+            
+            return excel_file
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error generating Excel file: {str(e)}")
+            raise
 
 def export_donations_to_excel():
     """Main function to export donations to Excel"""

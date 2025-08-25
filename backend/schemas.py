@@ -103,11 +103,11 @@ class DonationSchema(SQLAlchemyAutoSchema):
         include_fk = True
     
     # Custom validation
-    amount = fields.Decimal(required=True, validate=Range(min=0.01))
+    amount = fields.Decimal(required=True, validate=Range(min=0))
     donor_name = fields.Str(required=True, validate=Length(min=1, max=100))
-    tower = fields.Int(required=True, validate=Range(min=1, max=10))
-    floor = fields.Int(required=True, validate=Range(min=1, max=14))
-    unit = fields.Int(required=True, validate=Range(min=1, max=4))
+    tower = fields.Int(required=True, validate=Range(min=1, max=100))
+    floor = fields.Int(required=True, validate=Range(min=1, max=100))
+    unit = fields.Int(required=True, validate=Range(min=1, max=100))
     phone_number = fields.Str(validate=Length(max=20))
     head_count = fields.Int(validate=Range(min=1))
     payment_method = fields.Str(validate=OneOf(['cash', 'upi-self', 'upi-other']))
