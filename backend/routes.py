@@ -37,7 +37,7 @@ def create_donor():
     data = request.get_json()
     
     try:
-        donor = donor_schema.load(data)
+        donor = donor_schema.load(data, session=db.session)
         db.session.add(donor)
         db.session.commit()
         return jsonify(donor_schema.dump(donor)), 201
@@ -78,7 +78,7 @@ def create_donation():
     try:
         # Add user ID to donation
         data['user_id'] = request.user_id
-        donation = donation_schema.load(data)
+        donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
         db.session.commit()
         return jsonify(donation_schema.dump(donation)), 201
@@ -116,7 +116,7 @@ def create_apartment_donation(tower, floor, unit):
     })
     
     try:
-        donation = donation_schema.load(data)
+        donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
         db.session.commit()
         return jsonify(donation_schema.dump(donation)), 201
@@ -141,7 +141,7 @@ def mark_apartment_follow_up(tower, floor, unit):
     })
     
     try:
-        donation = donation_schema.load(data)
+        donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
         db.session.commit()
         return jsonify(donation_schema.dump(donation)), 201
@@ -166,7 +166,7 @@ def mark_apartment_skipped(tower, floor, unit):
     })
     
     try:
-        donation = donation_schema.load(data)
+        donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
         db.session.commit()
         return jsonify(donation_schema.dump(donation)), 201
@@ -196,7 +196,7 @@ def create_campaign():
     data = request.get_json()
     
     try:
-        campaign = campaign_schema.load(data)
+        campaign = campaign_schema.load(data, session=db.session)
         db.session.add(campaign)
         db.session.commit()
         return jsonify(campaign_schema.dump(campaign)), 201

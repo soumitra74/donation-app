@@ -14,7 +14,7 @@ interface AuthenticatedUser {
 function AppContent() {
   const [authenticatedUser, setAuthenticatedUser] = useState<AuthenticatedUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const { theme, setTheme } = useTheme()
+  const { theme } = useTheme()
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -60,9 +60,7 @@ function AppContent() {
     donationsService.clearToken()
   }
 
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'ambient') => {
-    setTheme(newTheme)
-  }
+
 
   if (loading) {
     return (
@@ -74,7 +72,7 @@ function AppContent() {
 
   // Show login form if user is not authenticated
   if (!authenticatedUser) {
-    return <LoginForm onLogin={handleLogin} theme={theme} onThemeChange={handleThemeChange} />
+    return <LoginForm onLogin={handleLogin} theme={theme} />
   }
 
   // Show dashboard if user is authenticated
@@ -84,7 +82,6 @@ function AppContent() {
       roles={authenticatedUser.roles}
       onLogout={handleLogout} 
       theme={theme} 
-      onThemeChange={handleThemeChange} 
     />
   )
 }

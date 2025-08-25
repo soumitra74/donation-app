@@ -14,10 +14,9 @@ import { authService, User, UserRole } from "@/services/auth"
 interface LoginFormProps {
   onLogin: (userData: { user: User; roles: UserRole[] }) => void
   theme: 'light' | 'dark' | 'ambient'
-  onThemeChange: (theme: 'light' | 'dark' | 'ambient') => void
 }
 
-export function LoginForm({ onLogin, theme, onThemeChange }: LoginFormProps) {
+export function LoginForm({ onLogin, theme }: LoginFormProps) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")

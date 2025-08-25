@@ -16,10 +16,9 @@ interface DonationDashboardProps {
   roles: UserRole[]
   onLogout: () => void
   theme: 'light' | 'dark' | 'ambient'
-  onThemeChange: (theme: 'light' | 'dark' | 'ambient') => void
 }
 
-export function DonationDashboard({ user, roles, onLogout, theme, onThemeChange }: DonationDashboardProps) {
+export function DonationDashboard({ user, roles, onLogout, theme }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [stats, setStats] = useState<DonationStats | null>(null)
   const [loading, setLoading] = useState(true)
