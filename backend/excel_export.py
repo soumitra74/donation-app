@@ -148,6 +148,9 @@ class ExcelExporter:
                 cell.border = self.border
                 cell.alignment = Alignment(horizontal='center')
             
+            # Enable filters for the header row
+            ws.auto_filter.ref = f"A{row}:{get_column_letter(len(headers))}{row}"
+            
             # Data
             row += 1
             for donation in tower_donations:
