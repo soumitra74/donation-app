@@ -16,6 +16,8 @@ class UserSchema(SQLAlchemyAutoSchema):
     name = fields.Str(required=True, validate=Length(min=1, max=100))
     password_hash = fields.Str(dump_only=True)  # Never return password hash
     google_id = fields.Str(dump_only=True)  # Never return Google ID
+    qr_code_data = fields.Raw(dump_only=True)  # Never return binary data in JSON
+    qr_code_mime_type = fields.Str(dump_only=True)  # Return MIME type for frontend reference
     
     # Include roles
     user_roles = fields.Nested('UserRoleSchema', many=True, dump_only=True)
@@ -68,6 +70,11 @@ class GoogleAuthSchema(Schema):
 class ChangePasswordSchema(Schema):
     current_password = fields.Str(required=True)
     new_password = fields.Str(required=True, validate=Length(min=6, max=100))
+
+class QRCodeUploadSchema(Schema):
+    """Schema for QR code upload validation"""
+    qr_code_data = fields.Raw(required=True)
+    qr_code_mime_type = fields.Str(required=True, validate=OneOf(['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/bmp']))
 
 # Base schemas using SQLAlchemyAutoSchema
 class DonorSchema(SQLAlchemyAutoSchema):
@@ -144,3 +151,5 @@ campaigns_schema = CampaignSchema(many=True)
 
 donation_schema = DonationSchema()
 donations_schema = DonationSchema(many=True)
+
+qr_code_upload_schema = QRCodeUploadSchema()

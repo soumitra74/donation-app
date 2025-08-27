@@ -12,6 +12,8 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     password_hash = db.Column(db.String(255), nullable=True)  # Nullable for Google auth
     google_id = db.Column(db.String(100), unique=True, nullable=True)
+    qr_code_data = db.Column(db.LargeBinary, nullable=True)  # QR code bitmap data
+    qr_code_mime_type = db.Column(db.String(50), nullable=True)  # MIME type of QR code (e.g., image/png)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

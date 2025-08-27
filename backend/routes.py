@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request, send_file
 from models import db, Donor, Donation, Campaign, User
-from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema
+from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema, qr_code_upload_schema
 from auth import require_auth, require_tower_access
 from sqlalchemy import func
 from excel_export import export_donations_to_excel
 from datetime import datetime
+import base64
+import io
 
 # Create API blueprint
 api_bp = Blueprint('api', __name__)
@@ -255,3 +257,98 @@ def export_excel():
         )
     except Exception as e:
         return jsonify({'error': f'Failed to generate Excel file: {str(e)}'}), 500
+
+# QR Code endpoints
+@api_bp.route('/users/qr-code', methods=['POST'])
+@require_auth
+def upsert_user_qr_code():
+    """Upsert QR code bitmap for the authenticated user"""
+    try:
+        # Get the authenticated user
+        user = User.query.get(request.user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Validate the request data
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        # Validate using schema
+        validated_data = qr_code_upload_schema.load(data)
+        
+        # Decode base64 data if provided as string
+        qr_code_data = validated_data['qr_code_data']
+        if isinstance(qr_code_data, str):
+            try:
+                qr_code_data = base64.b64decode(qr_code_data)
+            except Exception as e:
+                return jsonify({'error': f'Invalid base64 data: {str(e)}'}), 400
+        
+        # Update user's QR code data
+        user.qr_code_data = qr_code_data
+        user.qr_code_mime_type = validated_data['qr_code_mime_type']
+        user.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'QR code updated successfully',
+            'user_id': user.id,
+            'qr_code_mime_type': user.qr_code_mime_type,
+            'has_qr_code': True
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/users/qr-code', methods=['GET'])
+@require_auth
+def get_user_qr_code():
+    """Get QR code bitmap for the authenticated user"""
+    try:
+        # Get the authenticated user
+        user = User.query.get(request.user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        if not user.qr_code_data:
+            return jsonify({'error': 'No QR code found for this user'}), 404
+        
+        # Return the QR code as a file response
+        return send_file(
+            io.BytesIO(user.qr_code_data),
+            mimetype=user.qr_code_mime_type or 'image/png',
+            as_attachment=False
+        )
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/users/qr-code', methods=['DELETE'])
+@require_auth
+def delete_user_qr_code():
+    """Delete QR code bitmap for the authenticated user"""
+    try:
+        # Get the authenticated user
+        user = User.query.get(request.user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Clear QR code data
+        user.qr_code_data = None
+        user.qr_code_mime_type = None
+        user.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'QR code deleted successfully',
+            'user_id': user.id,
+            'has_qr_code': False
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400

@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
 import { ChangePassword } from "@/components/change-password"
+import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Settings, Download } from "lucide-react"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Settings, Download, User as UserIcon } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
 import { donationsService, Donation, DonationStats } from "@/services/donations"
 
@@ -28,6 +29,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
   )
   const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
   const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showProfile, setShowProfile] = useState(false)
   const [exporting, setExporting] = useState(false)
 
   // Get assigned towers from user roles
@@ -158,6 +160,15 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
     />
   }
 
+  if (showProfile) {
+    return <Profile
+      user={user}
+      roles={roles}
+      onBack={() => setShowProfile(false)}
+      theme={theme}
+    />
+  }
+
   return (
     <div className={getThemeClasses()}>
       {/* Ambient theme background effects */}
@@ -261,20 +272,36 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <ThemeToggle />
             </div>
             
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onLogout}
-              className={`${
-                theme === 'ambient' 
-                  ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                  : theme === 'dark'
-                  ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowProfile(true)}
+                className={`${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <UserIcon className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onLogout}
+                className={`${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
       </div>
 
@@ -759,6 +786,20 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
 
         {/* Logout Button at Bottom */}
         <div className="mt-8 mb-6 text-center">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowProfile(true)}
+            className={`${
+              theme === 'ambient' 
+                ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                : theme === 'dark'
+                ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <UserIcon className="h-4 w-4 mr-2" />
+            Profile
+          </Button>
           <Button 
             variant="outline" 
             onClick={onLogout}

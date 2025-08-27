@@ -92,6 +92,29 @@ def migrate_donation_table():
         # Make foreign keys nullable (SQLite doesn't support ALTER COLUMN DROP NOT NULL)
         print("Migration completed successfully!")
 
+def migrate_user_qr_code():
+    """Migrate the users table to include QR code fields"""
+    with app.app_context():
+        # Check if new columns exist
+        inspector = db.inspect(db.engine)
+        existing_columns = [col['name'] for col in inspector.get_columns('users')]
+        
+        # Add QR code data column if it doesn't exist
+        if 'qr_code_data' not in existing_columns:
+            with db.engine.connect() as conn:
+                conn.execute(db.text('ALTER TABLE users ADD COLUMN qr_code_data BLOB'))
+                conn.commit()
+            print("Added qr_code_data column")
+        
+        # Add QR code MIME type column if it doesn't exist
+        if 'qr_code_mime_type' not in existing_columns:
+            with db.engine.connect() as conn:
+                conn.execute(db.text('ALTER TABLE users ADD COLUMN qr_code_mime_type VARCHAR(50)'))
+                conn.commit()
+            print("Added qr_code_mime_type column")
+        
+        print("QR code migration completed successfully!")
+
 def create_default_admin():
     """Create a default admin user"""
     with app.app_context():
@@ -205,6 +228,7 @@ if __name__ == "__main__":
     print("Starting database migration...")
     create_tables()
     migrate_donation_table()
+    migrate_user_qr_code()
     create_default_admin()
     create_sample_invites()
     seed_sample_data()
