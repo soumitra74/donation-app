@@ -23,9 +23,10 @@ interface DonationFormProps {
     name: string
   }
   onDonationCreated?: () => void
+  theme?: 'light' | 'dark' | 'ambient'
 }
 
-export function DonationForm({ onCancel, preselectedApartment, onDonationCreated }: DonationFormProps) {
+export function DonationForm({ onCancel, preselectedApartment, onDonationCreated, theme = 'light' }: DonationFormProps) {
   const [currentApartment, setCurrentApartment] = useState({
     tower: preselectedApartment?.tower || 1,
     floor: preselectedApartment?.floor || 1,
@@ -219,40 +220,103 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
 
   const donationAmount = Number.parseFloat(formData.amount) || 0
 
+  const getThemeClasses = () => {
+    switch (theme) {
+      case 'dark':
+        return 'min-h-screen bg-gray-900'
+      case 'ambient':
+        return 'min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden'
+      default:
+        return 'min-h-screen bg-gray-50'
+    }
+  }
+
+  const getHeaderClasses = () => {
+    switch (theme) {
+      case 'dark':
+        return 'bg-gray-800 border-gray-700'
+      case 'ambient':
+        return 'bg-white/10 backdrop-blur-md border-white/20'
+      default:
+        return 'bg-white border-gray-200'
+    }
+  }
+
+  const getCardClasses = () => {
+    switch (theme) {
+      case 'dark':
+        return 'bg-gray-800 border-gray-700'
+      case 'ambient':
+        return 'bg-white/10 backdrop-blur-md border-white/20'
+      default:
+        return 'bg-white border-gray-200'
+    }
+  }
+
+  const getTextClasses = () => {
+    switch (theme) {
+      case 'dark':
+        return 'text-white'
+      case 'ambient':
+        return 'text-white'
+      default:
+        return 'text-gray-900'
+    }
+  }
+
+  const getSubtextClasses = () => {
+    switch (theme) {
+      case 'dark':
+        return 'text-gray-300'
+      case 'ambient':
+        return 'text-white/80'
+      default:
+        return 'text-gray-500'
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 relative">
+    <div className={getThemeClasses()}>
+      {/* Ambient theme background effects */}
+      {theme === 'ambient' && (
+        <>
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-indigo-500/20"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/5 to-transparent opacity-30"></div>
+        </>
+      )}
+
       {/* Transition Overlay */}
       {isTransitioning && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 text-center shadow-xl">
+          <div className={`rounded-lg p-6 text-center shadow-xl ${getCardClasses()}`}>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-700 font-medium">{transitionMessage}</p>
+            <p className={`font-medium ${getTextClasses()}`}>{transitionMessage}</p>
           </div>
         </div>
       )}
 
-      <div className="max-w-md mx-auto">
-        <div className="bg-white border-b px-4 py-4">
+      <div className="max-w-md mx-auto relative z-10">
+        <div className={`border-b px-4 py-4 ${getHeaderClasses()}`}>
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={navigatePrevious} className="p-2">
-              <ChevronLeft className="h-5 w-5" />
+              <ChevronLeft className={`h-5 w-5 ${getTextClasses()}`} />
             </Button>
 
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{getFlatNumber()}</div>
-              <div className="text-sm text-gray-500">
+              <div className={`text-2xl font-bold text-blue-600 ${theme === 'ambient' ? 'text-blue-400' : ''}`}>{getFlatNumber()}</div>
+              <div className={`text-sm ${getSubtextClasses()}`}>
                 Block {currentApartment.tower} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
               </div>
             </div>
 
             <Button variant="ghost" size="sm" onClick={navigateNext} className="p-2">
-              <ChevronRight className="h-5 w-5" />
+              <ChevronRight className={`h-5 w-5 ${getTextClasses()}`} />
             </Button>
           </div>
         </div>
 
         <div className="p-4">
-          <Card>
+          <Card className={getCardClasses()}>
             <CardContent className="pt-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
@@ -265,7 +329,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                     onChange={(e) => handleInputChange("amount", e.target.value)}
                     required
                     placeholder="₹ Donation Amount"
-                    className="text-3xl h-16 text-center font-bold border-2 border-blue-200 focus:border-blue-500"
+                    className={`text-3xl h-16 text-center font-bold border-2 border-blue-200 focus:border-blue-500 ${
+                      theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
+                      theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
+                      'bg-white text-gray-900 placeholder-gray-500'
+                    }`}
                     disabled={isTransitioning}
                   />
                 </div>
@@ -307,7 +375,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       onValueChange={(value) => handleInputChange("upiOtherPerson", value)}
                       disabled={isTransitioning}
                     >
-                      <SelectTrigger className="h-12">
+                      <SelectTrigger className={`h-12 ${
+                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
+                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
+                        'bg-white text-gray-900'
+                      }`}>
                         <SelectValue placeholder="Select UPI person" />
                       </SelectTrigger>
                       <SelectContent>
@@ -327,7 +399,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                     onChange={(e) => handleInputChange("donorName", e.target.value)}
                     required
                     placeholder="Donor Name"
-                    className="h-12"
+                    className={`h-12 ${
+                      theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
+                      theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
+                      'bg-white text-gray-900 placeholder-gray-500'
+                    }`}
                     disabled={isTransitioning}
                   />
                 </div>
@@ -339,7 +415,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       onValueChange={(value) => handleInputChange("sponsorship", value)}
                       disabled={isTransitioning}
                     >
-                      <SelectTrigger className="h-12">
+                      <SelectTrigger className={`h-12 ${
+                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
+                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
+                        'bg-white text-gray-900'
+                      }`}>
                         <SelectValue placeholder="Sponsorship" />
                       </SelectTrigger>
                       <SelectContent>
@@ -354,13 +434,21 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       value={formData.notes}
                       onChange={(e) => handleInputChange("notes", e.target.value)}
                       placeholder="Notes"
-                      className="min-h-[80px]"
+                      className={`min-h-[80px] ${
+                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
+                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
+                        'bg-white text-gray-900 placeholder-gray-500'
+                      }`}
                       disabled={isTransitioning}
                     />
                   </div>
                 )}
 
-                <div className="border-t border-gray-200 pt-6">
+                <div className={`border-t pt-6 ${
+                  theme === 'dark' ? 'border-gray-700' : 
+                  theme === 'ambient' ? 'border-white/20' : 
+                  'border-gray-200'
+                }`}>
                   <div className="space-y-4">
                     <Input
                       id="phoneNumber"
@@ -368,7 +456,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       value={formData.phoneNumber}
                       onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                       placeholder="Phone Number"
-                      className="h-12"
+                      className={`h-12 ${
+                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
+                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
+                        'bg-white text-gray-900'
+                      }`}
                       disabled={isTransitioning}
                     />
 
@@ -379,7 +471,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       value={formData.headCount}
                       onChange={(e) => handleInputChange("headCount", e.target.value)}
                       placeholder="Head Count"
-                      className="h-12"
+                      className={`h-12 ${
+                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
+                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
+                        'bg-white text-gray-900'
+                      }`}
                       disabled={isTransitioning}
                     />
                   </div>
@@ -396,7 +492,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-12 text-base bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                    className="h-12 text-base bg-transparent"
                     onClick={handleFollowUp}
                     disabled={isTransitioning}
                   >

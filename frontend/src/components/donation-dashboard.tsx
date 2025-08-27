@@ -154,6 +154,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
       preselectedApartment={selectedApartment}
       user={user}
       onDonationCreated={refreshDonations}
+      theme={theme}
     />
   }
 
@@ -200,11 +201,31 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
             </div>
             
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowChangePassword(true)}>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowChangePassword(true)}
+                className={`${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
                 <Settings className="h-4 w-4 mr-2" />
                 Change Password
               </Button>
-              <Button variant="outline" onClick={onLogout}>
+              <Button 
+                variant="outline" 
+                onClick={onLogout}
+                className={`${
+                  theme === 'ambient' 
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
@@ -240,7 +261,18 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <ThemeToggle />
             </div>
             
-            <Button variant="outline" size="sm" onClick={onLogout}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onLogout}
+              className={`${
+                theme === 'ambient' 
+                  ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                  : theme === 'dark'
+                  ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
