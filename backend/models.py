@@ -106,6 +106,22 @@ class Campaign(db.Model):
     def __repr__(self):
         return f'<Campaign {self.title}>'
 
+class Sponsorship(db.Model):
+    """Sponsorship model"""
+    __tablename__ = 'sponsorships'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    max_count = db.Column(db.Integer, nullable=False, default=1)
+    booked = db.Column(db.Integer, nullable=False, default=0)  # Track number of bookings
+    is_booked = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Sponsorship {self.name} - ₹{self.amount}>'
+
 class Donation(db.Model):
     """Donation model"""
     __tablename__ = 'donations'
@@ -138,6 +154,7 @@ class Donation(db.Model):
     donor_id = db.Column(db.Integer, db.ForeignKey('donors.id'), nullable=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey('campaigns.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Collector
+    sponsorship_id = db.Column(db.Integer, db.ForeignKey('sponsorships.id'), nullable=True)  # Sponsorship
     
     def __repr__(self):
         return f'<Donation {self.id} - {self.donor_name} - ₹{self.amount}>'

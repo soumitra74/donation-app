@@ -4,7 +4,7 @@ Run this script to update the database schema
 """
 
 from app import app, db
-from models import Donation, Donor, Campaign, User, Invite, UserRole
+from models import Donation, Donor, Campaign, User, Invite, UserRole, Sponsorship
 from auth import auth_service
 from datetime import datetime, timedelta
 import json
@@ -115,6 +115,47 @@ def migrate_user_qr_code():
         
         print("QR code migration completed successfully!")
 
+def migrate_sponsorship_table():
+    """Migrate to add the sponsorships table"""
+    with app.app_context():
+        # Check if sponsorships table exists
+        inspector = db.inspect(db.engine)
+        existing_tables = inspector.get_table_names()
+        
+        if 'sponsorships' not in existing_tables:
+            # Create the sponsorships table
+            Sponsorship.__table__.create(db.engine)
+            print("Created sponsorships table")
+        else:
+            # Check if 'booked' column exists
+            existing_columns = [col['name'] for col in inspector.get_columns('sponsorships')]
+            if 'booked' not in existing_columns:
+                with db.engine.connect() as conn:
+                    conn.execute(db.text('ALTER TABLE sponsorships ADD COLUMN booked INTEGER DEFAULT 0'))
+                    conn.commit()
+                print("Added 'booked' column to sponsorships table")
+            else:
+                print("'booked' column already exists in sponsorships table")
+        
+        print("Sponsorship table migration completed!")
+
+def migrate_donation_sponsorship():
+    """Migrate donations table to add sponsorship_id column"""
+    with app.app_context():
+        # Check if sponsorship_id column exists
+        inspector = db.inspect(db.engine)
+        existing_columns = [col['name'] for col in inspector.get_columns('donations')]
+        
+        if 'sponsorship_id' not in existing_columns:
+            with db.engine.connect() as conn:
+                conn.execute(db.text('ALTER TABLE donations ADD COLUMN sponsorship_id INTEGER'))
+                conn.commit()
+            print("Added sponsorship_id column to donations table")
+        else:
+            print("sponsorship_id column already exists in donations table")
+        
+        print("Donation sponsorship migration completed!")
+
 def create_default_admin():
     """Create a default admin user"""
     with app.app_context():
@@ -224,12 +265,59 @@ def seed_sample_data():
         db.session.commit()
         print("Sample data seeding completed!")
 
+def seed_sample_sponsorships():
+    """Seed the database with sample sponsorship data"""
+    with app.app_context():
+        # Check if sample sponsorships already exist
+        existing_sponsorship1 = Sponsorship.query.filter_by(name="Gold Sponsor").first()
+        existing_sponsorship2 = Sponsorship.query.filter_by(name="Silver Sponsor").first()
+        existing_sponsorship3 = Sponsorship.query.filter_by(name="Bronze Sponsor").first()
+        
+        if not existing_sponsorship1:
+            sponsorship1 = Sponsorship(
+                name="Gold Sponsor",
+                amount=10000.00,
+                max_count=5,
+                booked=0,
+                is_booked=False
+            )
+            db.session.add(sponsorship1)
+            print("Created sample sponsorship: Gold Sponsor")
+        
+        if not existing_sponsorship2:
+            sponsorship2 = Sponsorship(
+                name="Silver Sponsor",
+                amount=5000.00,
+                max_count=10,
+                booked=0,
+                is_booked=False
+            )
+            db.session.add(sponsorship2)
+            print("Created sample sponsorship: Silver Sponsor")
+        
+        if not existing_sponsorship3:
+            sponsorship3 = Sponsorship(
+                name="Bronze Sponsor",
+                amount=2500.00,
+                max_count=20,
+                booked=0,
+                is_booked=False
+            )
+            db.session.add(sponsorship3)
+            print("Created sample sponsorship: Bronze Sponsor")
+        
+        db.session.commit()
+        print("Sample sponsorship data seeding completed!")
+
 if __name__ == "__main__":
     print("Starting database migration...")
     create_tables()
     migrate_donation_table()
     migrate_user_qr_code()
+    migrate_sponsorship_table()
+    migrate_donation_sponsorship()
     create_default_admin()
     create_sample_invites()
     seed_sample_data()
+    seed_sample_sponsorships()
     print("Migration completed!")

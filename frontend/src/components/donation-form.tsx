@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { donationsService, CreateDonationData } from "@/services/donations"
+import { sponsorshipsService, Sponsorship } from "@/services/sponsorships"
 import { authService } from "@/services/auth"
 
 interface DonationFormProps {
@@ -38,6 +39,8 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const [showQrPopup, setShowQrPopup] = useState(false)
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
   const [loadingQr, setLoadingQr] = useState(false)
+  const [sponsorships, setSponsorships] = useState<Sponsorship[]>([])
+  const [loadingSponsorships, setLoadingSponsorships] = useState(false)
 
   // Update currentApartment when preselectedApartment changes
   useEffect(() => {
@@ -50,6 +53,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     }
   }, [preselectedApartment])
 
+  // Load sponsorships on component mount
+  useEffect(() => {
+    loadSponsorships()
+  }, [])
+
   // Cleanup QR code URL when component unmounts or QR code changes
   useEffect(() => {
     return () => {
@@ -58,6 +66,18 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       }
     }
   }, [qrCodeUrl])
+
+  const loadSponsorships = async () => {
+    setLoadingSponsorships(true)
+    try {
+      const availableSponsorships = await sponsorshipsService.getAvailableSponsorships()
+      setSponsorships(availableSponsorships)
+    } catch (error) {
+      console.error('Failed to load sponsorships:', error)
+    } finally {
+      setLoadingSponsorships(false)
+    }
+  }
 
   const loadQrCode = async () => {
     setLoadingQr(true)
@@ -88,6 +108,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     paymentMethod: "cash" as "cash" | "upi-self" | "upi-other",
     upiOtherPerson: "",
     sponsorship: "",
+    sponsorshipId: "",
     notes: "",
   })
 
@@ -149,23 +170,26 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     return currentApartment.tower === 10 && currentApartment.floor === 14 && currentApartment.unit === 4
   }
 
+  const handleSponsorshipChange = (sponsorshipName: string) => {
+    const selectedSponsorship = sponsorships.find(s => s.name === sponsorshipName)
+    setFormData(prev => ({
+      ...prev,
+      sponsorship: sponsorshipName,
+      sponsorshipId: selectedSponsorship ? selectedSponsorship.id.toString() : ""
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!formData.donorName.trim() || !formData.amount.trim()) {
-      alert("Please fill in all required fields")
-      return
-    }
-
-    const amount = parseFloat(formData.amount)
-    if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid amount")
-      return
-    }
-
-    setTransitionMessage("Recording donation...")
     setIsTransitioning(true)
+    setTransitionMessage("Recording donation...")
+
     try {
+      const amount = parseFloat(formData.amount)
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error("Please enter a valid amount")
+      }
+
       const donationData: CreateDonationData = {
         donor_name: formData.donorName.trim(),
         amount: amount,
@@ -177,6 +201,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         payment_method: formData.paymentMethod,
         upi_other_person: formData.upiOtherPerson.trim() || undefined,
         sponsorship: formData.sponsorship.trim() || undefined,
+        sponsorship_id: formData.sponsorshipId ? parseInt(formData.sponsorshipId) : undefined,
         notes: formData.notes.trim() || undefined,
       }
 
@@ -191,6 +216,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         paymentMethod: "cash",
         upiOtherPerson: "",
         sponsorship: "",
+        sponsorshipId: "",
         notes: "",
       })
 
@@ -508,7 +534,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   <div className="space-y-3">
                     <Select
                       value={formData.sponsorship}
-                      onValueChange={(value) => handleInputChange("sponsorship", value)}
+                      onValueChange={handleSponsorshipChange}
                       disabled={isTransitioning}
                     >
                       <SelectTrigger className={`h-12 ${
@@ -519,10 +545,20 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                         <SelectValue placeholder="Sponsorship" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="NA">Select</SelectItem>
-                        <SelectItem value="Flowers">Flowers</SelectItem>
-                        <SelectItem value="Sweets">Sweets</SelectItem>
-                        <SelectItem value="Decoration">Decoration</SelectItem>
+                        {loadingSponsorships ? (
+                          <SelectItem value="">Loading sponsorships...</SelectItem>
+                        ) : sponsorships.length === 0 ? (
+                          <SelectItem value="">No sponsorships available</SelectItem>
+                        ) : (
+                          <>
+                            <SelectItem value="">Select a sponsorship</SelectItem>
+                            {sponsorships.map((sponsorship) => (
+                              <SelectItem key={sponsorship.id} value={sponsorship.name}>
+                                {sponsorship.name} (₹{sponsorship.amount})
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
 

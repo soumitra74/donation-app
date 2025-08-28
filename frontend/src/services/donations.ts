@@ -18,6 +18,7 @@ export interface Donation {
   payment_method?: string
   upi_other_person?: string
   sponsorship?: string
+  sponsorship_id?: number
   notes?: string
   status: string
   user_id?: number
@@ -42,6 +43,7 @@ export interface CreateDonationData {
   payment_method?: string
   upi_other_person?: string
   sponsorship?: string
+  sponsorship_id?: number
   notes?: string
 }
 

@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
-from models import db, Donor, Donation, Campaign, User
-from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema, qr_code_upload_schema
+from models import db, Donor, Donation, Campaign, User, Sponsorship
+from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema, sponsorship_schema, sponsorships_schema, qr_code_upload_schema
 from auth import require_auth, require_tower_access
 from sqlalchemy import func
 from excel_export import export_donations_to_excel
@@ -118,6 +118,23 @@ def create_apartment_donation(tower, floor, unit):
     })
     
     try:
+        # Handle sponsorship booking if sponsorship_id is provided
+        sponsorship_id = data.get('sponsorship_id')
+        if sponsorship_id:
+            sponsorship = Sponsorship.query.get(sponsorship_id)
+            if not sponsorship:
+                return jsonify({'error': 'Sponsorship not found'}), 404
+            
+            if sponsorship.is_booked:
+                return jsonify({'error': 'Sponsorship is already fully booked'}), 400
+            
+            # Increment booked count
+            sponsorship.booked += 1
+            
+            # Check if sponsorship is now fully booked
+            if sponsorship.booked >= sponsorship.max_count:
+                sponsorship.is_booked = True
+        
         donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
         db.session.commit()
@@ -202,6 +219,93 @@ def create_campaign():
         db.session.add(campaign)
         db.session.commit()
         return jsonify(campaign_schema.dump(campaign)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+# Sponsorship endpoints
+@api_bp.route('/sponsorships', methods=['GET'])
+@require_auth
+def get_sponsorships():
+    """Get all sponsorships"""
+    sponsorships = Sponsorship.query.all()
+    return jsonify(sponsorships_schema.dump(sponsorships))
+
+@api_bp.route('/sponsorships/<int:sponsorship_id>', methods=['GET'])
+@require_auth
+def get_sponsorship(sponsorship_id):
+    """Get a specific sponsorship"""
+    sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
+    return jsonify(sponsorship_schema.dump(sponsorship))
+
+@api_bp.route('/sponsorships', methods=['POST'])
+@require_auth
+def create_sponsorship():
+    """Create a new sponsorship"""
+    data = request.get_json()
+    
+    try:
+        sponsorship = sponsorship_schema.load(data, session=db.session)
+        db.session.add(sponsorship)
+        db.session.commit()
+        return jsonify(sponsorship_schema.dump(sponsorship)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/sponsorships/<int:sponsorship_id>', methods=['PUT'])
+@require_auth
+def update_sponsorship(sponsorship_id):
+    """Update a sponsorship"""
+    sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
+    data = request.get_json()
+    
+    try:
+        sponsorship = sponsorship_schema.load(data, instance=sponsorship, session=db.session, partial=True)
+        db.session.commit()
+        return jsonify(sponsorship_schema.dump(sponsorship))
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/sponsorships/<int:sponsorship_id>', methods=['DELETE'])
+@require_auth
+def delete_sponsorship(sponsorship_id):
+    """Delete a sponsorship"""
+    sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
+    
+    try:
+        db.session.delete(sponsorship)
+        db.session.commit()
+        return jsonify({'message': 'Sponsorship deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/sponsorships/<int:sponsorship_id>/book', methods=['POST'])
+@require_auth
+def book_sponsorship(sponsorship_id):
+    """Book a sponsorship (mark as booked)"""
+    sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
+    
+    try:
+        sponsorship.is_booked = True
+        db.session.commit()
+        return jsonify(sponsorship_schema.dump(sponsorship))
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/sponsorships/<int:sponsorship_id>/unbook', methods=['POST'])
+@require_auth
+def unbook_sponsorship(sponsorship_id):
+    """Unbook a sponsorship (mark as not booked)"""
+    sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
+    
+    try:
+        sponsorship.is_booked = False
+        db.session.commit()
+        return jsonify(sponsorship_schema.dump(sponsorship))
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400

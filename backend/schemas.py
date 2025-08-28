@@ -1,6 +1,6 @@
 from marshmallow import Schema, fields, ValidationError
 from marshmallow.validate import Range, Length, OneOf, Email
-from models import Donor, Donation, Campaign, User, Invite, UserRole
+from models import Donor, Donation, Campaign, User, Invite, UserRole, Sponsorship
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 from datetime import datetime, timedelta
 
@@ -103,6 +103,19 @@ class CampaignSchema(SQLAlchemyAutoSchema):
         if 'start_date' in kwargs['data'] and value <= kwargs['data']['start_date']:
             raise ValidationError('End date must be after start date')
 
+class SponsorshipSchema(SQLAlchemyAutoSchema):
+    class Meta:
+        model = Sponsorship
+        load_instance = True
+        include_fk = True
+    
+    # Custom validation
+    name = fields.Str(required=True, validate=Length(min=1, max=200))
+    amount = fields.Decimal(required=True, validate=Range(min=0.01))
+    max_count = fields.Int(required=True, validate=Range(min=1))
+    booked = fields.Int(required=False, validate=Range(min=0))
+    is_booked = fields.Bool(default=False)
+
 class DonationSchema(SQLAlchemyAutoSchema):
     class Meta:
         model = Donation
@@ -127,6 +140,7 @@ class DonationSchema(SQLAlchemyAutoSchema):
     donor_id = fields.Int(required=False)
     campaign_id = fields.Int(required=False)
     user_id = fields.Int(required=False)
+    sponsorship_id = fields.Int(required=False)
 
 # Schema instances
 user_schema = UserSchema()
@@ -148,6 +162,9 @@ donors_schema = DonorSchema(many=True)
 
 campaign_schema = CampaignSchema()
 campaigns_schema = CampaignSchema(many=True)
+
+sponsorship_schema = SponsorshipSchema()
+sponsorships_schema = SponsorshipSchema(many=True)
 
 donation_schema = DonationSchema()
 donations_schema = DonationSchema(many=True)
