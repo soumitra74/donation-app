@@ -3,7 +3,7 @@ from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from models import Donation, db
+from models import Donation, Sponsorship, db
 from sqlalchemy import func
 
 class ExcelExporter:
@@ -114,6 +114,170 @@ class ExcelExporter:
             adjusted_width = min(max_length + 2, 50)
             self.ws.column_dimensions[column_letter].width = adjusted_width
 
+    def create_sponsorship_sheet(self):
+        """Create the sponsorship summary sheet with filtering"""
+        # Create new sheet
+        ws = self.workbook.create_sheet("Sponsorship Summary")
+        
+        # Title
+        ws['A1'] = "SPONSORSHIP SUMMARY REPORT"
+        ws['A1'].font = Font(bold=True, size=16)
+        ws.merge_cells('A1:H1')
+        ws['A1'].alignment = Alignment(horizontal='center')
+        
+        # Get sponsorship statistics
+        sponsorship_stats = self._get_sponsorship_statistics()
+        
+        # Metadata section
+        row = 3
+        ws[f'A{row}'] = "SPONSORSHIP METADATA"
+        ws[f'A{row}'].font = self.header_font
+        ws[f'A{row}'].fill = self.header_fill
+        ws.merge_cells(f'A{row}:H{row}')
+        
+        row += 1
+        metadata_data = [
+            ["Exported At", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
+            ["Total Sponsorships", sponsorship_stats['total_sponsorships']],
+            ["Total Sponsorship Value", f"₹{sponsorship_stats['total_value']:,.2f}"],
+            ["Booked Sponsorships", sponsorship_stats['booked_sponsorships']],
+            ["Available Sponsorships", sponsorship_stats['available_sponsorships']],
+            ["Total Bookings", sponsorship_stats['total_bookings']],
+            ["Total Max Capacity", sponsorship_stats['total_max_capacity']],
+            ["Utilization Rate", f"{sponsorship_stats['utilization_rate']:.1f}%"]
+        ]
+        
+        for label, value in metadata_data:
+            ws[f'A{row}'] = label
+            ws[f'B{row}'] = value
+            ws[f'A{row}'].font = Font(bold=True)
+            ws[f'A{row}'].border = self.border
+            ws[f'B{row}'].border = self.border
+            row += 1
+        
+        # Sponsorship Details Table
+        row += 2
+        ws[f'A{row}'] = "SPONSORSHIP DETAILS"
+        ws[f'A{row}'].font = self.header_font
+        ws[f'A{row}'].fill = self.header_fill
+        ws.merge_cells(f'A{row}:H{row}')
+        
+        row += 1
+        headers = [
+            "ID", "Sponsorship Name", "Amount", "Max Count", 
+            "Booked Count", "Available", "Status", "Created Date"
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws[f'{get_column_letter(col)}{row}']
+            cell.value = header
+            cell.font = self.subheader_font
+            cell.fill = self.subheader_fill
+            cell.border = self.border
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Enable filters for the header row
+        ws.auto_filter.ref = f"A{row}:{get_column_letter(len(headers))}{row}"
+        
+        # Get all sponsorships
+        sponsorships = Sponsorship.query.all()
+        
+        row += 1
+        for sponsorship in sponsorships:
+            available = sponsorship.max_count - sponsorship.booked
+            status = "Closed" if sponsorship.is_closed else "Available" if available > 0 else "Partially Booked"
+            
+            ws[f'A{row}'] = sponsorship.id
+            ws[f'B{row}'] = sponsorship.name
+            ws[f'C{row}'] = float(sponsorship.amount)
+            ws[f'D{row}'] = sponsorship.max_count
+            ws[f'E{row}'] = sponsorship.booked
+            ws[f'F{row}'] = available
+            ws[f'G{row}'] = status
+            ws[f'H{row}'] = sponsorship.created_at.strftime("%Y-%m-%d %H:%M")
+            
+            # Apply borders and formatting
+            for col in range(1, 9):
+                cell = ws[f'{get_column_letter(col)}{row}']
+                cell.border = self.border
+                if col == 3:  # Amount column
+                    cell.number_format = '₹#,##0.00'
+                elif col == 4 or col == 5 or col == 6:  # Count columns
+                    cell.number_format = '0'
+            
+            row += 1
+        
+        # Sponsorship Donations Table
+        row += 2
+        ws[f'A{row}'] = "DONATIONS WITH SPONSORSHIP"
+        ws[f'A{row}'].font = self.header_font
+        ws[f'A{row}'].fill = self.header_fill
+        ws.merge_cells(f'A{row}:K{row}')
+        
+        row += 1
+        donation_headers = [
+            "Donation ID", "Tower", "Apartment", "Donor Name", "Amount", 
+            "Sponsorship Name", "Phone Number", "Head Count", "UPI/Other Person", 
+            "Notes", "Date"
+        ]
+        
+        for col, header in enumerate(donation_headers, 1):
+            cell = ws[f'{get_column_letter(col)}{row}']
+            cell.value = header
+            cell.font = self.subheader_font
+            cell.fill = self.subheader_fill
+            cell.border = self.border
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Enable filters for the donation header row
+        ws.auto_filter.ref = f"A{row}:{get_column_letter(len(donation_headers))}{row}"
+        
+        # Get donations with sponsorship
+        donations_with_sponsorship = Donation.query.filter(
+            Donation.sponsorship.isnot(None),
+            Donation.sponsorship != ""
+        ).order_by(Donation.created_at.desc()).all()
+        
+        row += 1
+        for donation in donations_with_sponsorship:
+            apartment = f"{chr(64 + donation.tower)}{donation.floor}{donation.unit:02d}"
+            
+            ws[f'A{row}'] = donation.id
+            ws[f'B{row}'] = f"Tower {chr(64 + donation.tower)}"
+            ws[f'C{row}'] = apartment
+            ws[f'D{row}'] = donation.donor_name
+            ws[f'E{row}'] = float(donation.amount)
+            ws[f'F{row}'] = donation.sponsorship or ""
+            ws[f'G{row}'] = donation.phone_number or ""
+            ws[f'H{row}'] = donation.head_count or ""
+            ws[f'I{row}'] = donation.upi_other_person or ""
+            ws[f'J{row}'] = donation.notes or ""
+            ws[f'K{row}'] = donation.created_at.strftime("%Y-%m-%d %H:%M")
+            
+            # Apply borders and formatting
+            for col in range(1, 12):
+                cell = ws[f'{get_column_letter(col)}{row}']
+                cell.border = self.border
+                if col == 5:  # Amount column
+                    cell.number_format = '₹#,##0.00'
+                elif col == 8:  # Head count column
+                    cell.number_format = '0'
+            
+            row += 1
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 30)
+            ws.column_dimensions[column_letter].width = adjusted_width
+
     def create_tower_sheets(self):
         """Create individual sheets for each tower"""
         sheets_created = 0
@@ -191,6 +355,30 @@ class ExcelExporter:
                 adjusted_width = min(max_length + 2, 30)
                 ws.column_dimensions[column_letter].width = adjusted_width
 
+    def _get_sponsorship_statistics(self):
+        """Get sponsorship statistics for the metadata section"""
+        # Get all sponsorships
+        sponsorships = Sponsorship.query.all()
+        
+        total_sponsorships = len(sponsorships)
+        total_value = sum(float(s.amount) * s.max_count for s in sponsorships)
+        booked_sponsorships = sum(1 for s in sponsorships if s.is_closed)
+        available_sponsorships = sum(1 for s in sponsorships if not s.is_closed)
+        total_bookings = sum(s.booked for s in sponsorships)
+        total_max_capacity = sum(s.max_count for s in sponsorships)
+        
+        utilization_rate = (total_bookings / total_max_capacity * 100) if total_max_capacity > 0 else 0
+        
+        return {
+            'total_sponsorships': total_sponsorships,
+            'total_value': total_value,
+            'booked_sponsorships': booked_sponsorships,
+            'available_sponsorships': available_sponsorships,
+            'total_bookings': total_bookings,
+            'total_max_capacity': total_max_capacity,
+            'utilization_rate': utilization_rate
+        }
+
     def _get_statistics(self):
         """Get overall statistics for the metadata sheet"""
         # Total amount
@@ -256,6 +444,7 @@ class ExcelExporter:
         """Generate the complete Excel file"""
         try:
             self.create_metadata_sheet()
+            self.create_sponsorship_sheet()
             self.create_tower_sheets()
             
             # Remove the default sheet if it exists and we have other sheets

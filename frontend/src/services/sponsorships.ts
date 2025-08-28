@@ -9,7 +9,7 @@ export interface Sponsorship {
   amount: string
   max_count: number
   booked: number
-  is_booked: boolean
+  is_closed: boolean
   created_at: string
   updated_at: string
 }
@@ -122,7 +122,7 @@ class SponsorshipsService {
   // Get available sponsorships (not fully booked)
   async getAvailableSponsorships(): Promise<Sponsorship[]> {
     const sponsorships = await this.getSponsorships()
-    return sponsorships.filter(sponsorship => !sponsorship.is_booked)
+    return sponsorships.filter(sponsorship => !sponsorship.is_closed)
   }
 }
 

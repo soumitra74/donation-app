@@ -115,7 +115,7 @@ class Sponsorship(db.Model):
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     max_count = db.Column(db.Integer, nullable=False, default=1)
     booked = db.Column(db.Integer, nullable=False, default=0)  # Track number of bookings
-    is_booked = db.Column(db.Boolean, default=False)
+    is_closed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

@@ -156,6 +156,24 @@ def migrate_donation_sponsorship():
         
         print("Donation sponsorship migration completed!")
 
+def migrate_sponsorship_is_closed():
+    """Migrate to rename is_booked to is_closed in sponsorships table"""
+    with app.app_context():
+        inspector = db.inspect(db.engine)
+        existing_columns = [col['name'] for col in inspector.get_columns('sponsorships')]
+        
+        if 'is_booked' in existing_columns and 'is_closed' not in existing_columns:
+            with db.engine.connect() as conn:
+                conn.execute(db.text('ALTER TABLE sponsorships RENAME COLUMN is_booked TO is_closed'))
+                conn.commit()
+            print("Renamed is_booked to is_closed in sponsorships table")
+        elif 'is_closed' in existing_columns:
+            print("is_closed column already exists in sponsorships table")
+        else:
+            print("Neither is_booked nor is_closed column found in sponsorships table")
+        
+        print("Sponsorship is_closed migration completed!")
+
 def create_default_admin():
     """Create a default admin user"""
     with app.app_context():
@@ -279,7 +297,7 @@ def seed_sample_sponsorships():
                 amount=10000.00,
                 max_count=5,
                 booked=0,
-                is_booked=False
+                is_closed=False
             )
             db.session.add(sponsorship1)
             print("Created sample sponsorship: Gold Sponsor")
@@ -290,7 +308,7 @@ def seed_sample_sponsorships():
                 amount=5000.00,
                 max_count=10,
                 booked=0,
-                is_booked=False
+                is_closed=False
             )
             db.session.add(sponsorship2)
             print("Created sample sponsorship: Silver Sponsor")
@@ -301,7 +319,7 @@ def seed_sample_sponsorships():
                 amount=2500.00,
                 max_count=20,
                 booked=0,
-                is_booked=False
+                is_closed=False
             )
             db.session.add(sponsorship3)
             print("Created sample sponsorship: Bronze Sponsor")
@@ -316,6 +334,7 @@ if __name__ == "__main__":
     migrate_user_qr_code()
     migrate_sponsorship_table()
     migrate_donation_sponsorship()
+    migrate_sponsorship_is_closed()
     create_default_admin()
     create_sample_invites()
     seed_sample_data()

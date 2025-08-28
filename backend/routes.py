@@ -80,6 +80,27 @@ def create_donation():
     try:
         # Add user ID to donation
         data['user_id'] = request.user_id
+        
+        # Handle sponsorship booking if sponsorship_id is provided
+        sponsorship_id = data.get('sponsorship_id')
+        if sponsorship_id:
+            sponsorship = Sponsorship.query.get(sponsorship_id)
+            if not sponsorship:
+                return jsonify({'error': 'Sponsorship not found'}), 404
+            
+            if sponsorship.is_closed:
+                return jsonify({'error': 'Sponsorship is already closed'}), 400
+            
+            # Increment booked count
+            sponsorship.booked += 1
+            
+            # Check if sponsorship is now fully booked
+            if sponsorship.booked >= sponsorship.max_count:
+                sponsorship.is_closed = True
+            
+            # Add the modified sponsorship back to the session
+            db.session.add(sponsorship)
+        
         donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
         db.session.commit()
@@ -125,15 +146,18 @@ def create_apartment_donation(tower, floor, unit):
             if not sponsorship:
                 return jsonify({'error': 'Sponsorship not found'}), 404
             
-            if sponsorship.is_booked:
-                return jsonify({'error': 'Sponsorship is already fully booked'}), 400
+            if sponsorship.is_closed:
+                return jsonify({'error': 'Sponsorship is already closed'}), 400
             
             # Increment booked count
             sponsorship.booked += 1
             
             # Check if sponsorship is now fully booked
             if sponsorship.booked >= sponsorship.max_count:
-                sponsorship.is_booked = True
+                sponsorship.is_closed = True
+            
+            # Add the modified sponsorship back to the session
+            db.session.add(sponsorship)
         
         donation = donation_schema.load(data, session=db.session)
         db.session.add(donation)
@@ -285,11 +309,11 @@ def delete_sponsorship(sponsorship_id):
 @api_bp.route('/sponsorships/<int:sponsorship_id>/book', methods=['POST'])
 @require_auth
 def book_sponsorship(sponsorship_id):
-    """Book a sponsorship (mark as booked)"""
+    """Book a sponsorship (mark as closed)"""
     sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
     
     try:
-        sponsorship.is_booked = True
+        sponsorship.is_closed = True
         db.session.commit()
         return jsonify(sponsorship_schema.dump(sponsorship))
     except Exception as e:
@@ -299,11 +323,11 @@ def book_sponsorship(sponsorship_id):
 @api_bp.route('/sponsorships/<int:sponsorship_id>/unbook', methods=['POST'])
 @require_auth
 def unbook_sponsorship(sponsorship_id):
-    """Unbook a sponsorship (mark as not booked)"""
+    """Unbook a sponsorship (mark as not closed)"""
     sponsorship = Sponsorship.query.get_or_404(sponsorship_id)
     
     try:
-        sponsorship.is_booked = False
+        sponsorship.is_closed = False
         db.session.commit()
         return jsonify(sponsorship_schema.dump(sponsorship))
     except Exception as e:

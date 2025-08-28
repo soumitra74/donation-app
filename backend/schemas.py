@@ -114,7 +114,7 @@ class SponsorshipSchema(SQLAlchemyAutoSchema):
     amount = fields.Decimal(required=True, validate=Range(min=0.01))
     max_count = fields.Int(required=True, validate=Range(min=1))
     booked = fields.Int(required=False, validate=Range(min=0))
-    is_booked = fields.Bool(default=False)
+    is_closed = fields.Bool(default=False)
 
 class DonationSchema(SQLAlchemyAutoSchema):
     class Meta:
