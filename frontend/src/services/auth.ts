@@ -184,6 +184,31 @@ class AuthService {
       return role.assigned_towers.includes(tower)
     })
   }
+
+  // Get user's QR code as a blob URL
+  async getQrCode(): Promise<string | null> {
+    if (!this.token) {
+      return null
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/qr-code`, {
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+        },
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        return URL.createObjectURL(blob)
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Failed to load QR code:', error)
+      return null
+    }
+  }
 }
 
 export const authService = new AuthService()

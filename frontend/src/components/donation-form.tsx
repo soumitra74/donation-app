@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { donationsService, CreateDonationData } from "@/services/donations"
+import { authService } from "@/services/auth"
 
 interface DonationFormProps {
   onCancel: () => void
@@ -34,6 +35,9 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   })
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [transitionMessage, setTransitionMessage] = useState("")
+  const [showQrPopup, setShowQrPopup] = useState(false)
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+  const [loadingQr, setLoadingQr] = useState(false)
 
   // Update currentApartment when preselectedApartment changes
   useEffect(() => {
@@ -45,6 +49,36 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       })
     }
   }, [preselectedApartment])
+
+  // Cleanup QR code URL when component unmounts or QR code changes
+  useEffect(() => {
+    return () => {
+      if (qrCodeUrl) {
+        URL.revokeObjectURL(qrCodeUrl)
+      }
+    }
+  }, [qrCodeUrl])
+
+  const loadQrCode = async () => {
+    setLoadingQr(true)
+    try {
+      const url = await authService.getQrCode()
+      setQrCodeUrl(url)
+    } catch (error) {
+      console.error('Failed to load QR code:', error)
+    } finally {
+      setLoadingQr(false)
+    }
+  }
+
+  const handlePaymentMethodChange = (method: "cash" | "upi-self" | "upi-other") => {
+    handleInputChange("paymentMethod", method)
+    
+    if (method === "upi-self") {
+      loadQrCode()
+      setShowQrPopup(true)
+    }
+  }
 
   const [formData, setFormData] = useState({
     donorName: "",
@@ -218,6 +252,24 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleQrPopupClose = () => {
+    setShowQrPopup(false)
+    if (qrCodeUrl) {
+      URL.revokeObjectURL(qrCodeUrl)
+      setQrCodeUrl(null)
+    }
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      handleQrPopupClose()
+    }
+  }
+
+  const handleQrPopupDoubleClick = () => {
+    handleQrPopupClose()
+  }
+
   const donationAmount = Number.parseFloat(formData.amount) || 0
 
   const getThemeClasses = () => {
@@ -295,6 +347,50 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         </div>
       )}
 
+      {/* QR Code Popup */}
+      {showQrPopup && (
+        <div 
+          className="absolute inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={handleBackdropClick}
+        >
+          <div 
+            className={`rounded-lg p-6 text-center shadow-xl max-w-sm mx-4 ${getCardClasses()}`}
+            onDoubleClick={handleQrPopupDoubleClick}
+          >
+            <h3 className={`text-lg font-semibold mb-4 ${getTextClasses()}`}>Scan QR Code</h3>
+            {loadingQr ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span className={`ml-2 ${getTextClasses()}`}>Loading QR Code...</span>
+              </div>
+            ) : qrCodeUrl ? (
+              <div className="space-y-4">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code" 
+                  className="w-48 h-48 mx-auto border-2 border-gray-300 rounded-lg"
+                />
+                <p className={`text-sm ${getSubtextClasses()}`}>
+                  Double-click to close or click outside
+                </p>
+              </div>
+            ) : (
+              <div className="py-8">
+                <p className={`text-red-500 ${getTextClasses()}`}>
+                  No QR code found. Please upload one in your profile.
+                </p>
+                <Button 
+                  onClick={handleQrPopupClose}
+                  className="mt-4"
+                >
+                  Close
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto relative z-10">
         <div className={`border-b px-4 py-4 ${getHeaderClasses()}`}>
           <div className="flex items-center justify-between">
@@ -343,7 +439,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                     <Button
                       type="button"
                       variant={formData.paymentMethod === "cash" ? "default" : "outline"}
-                      onClick={() => handleInputChange("paymentMethod", "cash")}
+                      onClick={() => handlePaymentMethodChange("cash")}
                       className="h-12"
                       disabled={isTransitioning}
                     >
@@ -352,7 +448,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                     <Button
                       type="button"
                       variant={formData.paymentMethod === "upi-self" ? "default" : "outline"}
-                      onClick={() => handleInputChange("paymentMethod", "upi-self")}
+                      onClick={() => handlePaymentMethodChange("upi-self")}
                       className="h-12"
                       disabled={isTransitioning}
                     >
@@ -361,7 +457,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                     <Button
                       type="button"
                       variant={formData.paymentMethod === "upi-other" ? "default" : "outline"}
-                      onClick={() => handleInputChange("paymentMethod", "upi-other")}
+                      onClick={() => handlePaymentMethodChange("upi-other")}
                       className="h-12"
                       disabled={isTransitioning}
                     >
