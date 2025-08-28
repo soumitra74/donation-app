@@ -10,13 +10,13 @@ class UserSchema(SQLAlchemyAutoSchema):
         model = User
         load_instance = True
         include_fk = True
+        exclude = ('qr_code_data',)  # Explicitly exclude binary data
     
     # Custom validation
     email = fields.Email(required=True)
     name = fields.Str(required=True, validate=Length(min=1, max=100))
     password_hash = fields.Str(dump_only=True)  # Never return password hash
     google_id = fields.Str(dump_only=True)  # Never return Google ID
-    qr_code_data = fields.Raw(dump_only=True)  # Never return binary data in JSON
     qr_code_mime_type = fields.Str(dump_only=True)  # Return MIME type for frontend reference
     
     # Include roles

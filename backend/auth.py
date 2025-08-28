@@ -27,11 +27,15 @@ class AuthService:
     def hash_password(self, password):
         """Hash a password using bcrypt"""
         salt = bcrypt.gensalt()
-        return bcrypt.hashpw(password.encode('utf-8'), salt)
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')  # Convert bytes to string for database storage
     
     def verify_password(self, password, password_hash):
         """Verify a password against its hash"""
-        return bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8'))
+        # password_hash from database is already a string, so we need to encode it back to bytes
+        if isinstance(password_hash, str):
+            password_hash = password_hash.encode('utf-8')
+        return bcrypt.checkpw(password.encode('utf-8'), password_hash)
     
     def generate_token(self, user_id, email, roles):
         """Generate JWT token for user"""

@@ -12,3 +12,4 @@ playwright-report/
 playwright/.cache/
 
 .vercel
+src/vite-end.d.ts
