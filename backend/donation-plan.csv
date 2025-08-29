@@ -1,11 +1,21 @@
 name,amount,max_count,description
-Gold Sponsor,10000.00,5,Premium sponsorship with maximum visibility
-Silver Sponsor,5000.00,10,Standard sponsorship with good visibility
-Bronze Sponsor,2500.00,20,Basic sponsorship package
-Platinum Sponsor,15000.00,3,Ultimate sponsorship with exclusive benefits
-Diamond Sponsor,20000.00,2,Top-tier sponsorship with VIP treatment
-Emerald Sponsor,7500.00,8,Mid-tier sponsorship with enhanced features
-Ruby Sponsor,3000.00,15,Entry-level sponsorship package
-Sapphire Sponsor,6000.00,12,Quality sponsorship with good value
-Pearl Sponsor,1500.00,25,Affordable sponsorship option
-Crystal Sponsor,4000.00,18,Clear value sponsorship package
+Ma Durga Idol,35000,2,Single or Joint Donors
+Annadanam (Community lunch)-Saptami,20000,2,Single or Joint Donors
+Annadanam (Community lunch)-Ashtami,20000,2,Single or Joint Donors
+Ma Lakshmi dol Kojgari Laxmi Puja),6000,1,Single Donor
+Ma Durga Astra Samagi,20000,2,Single or Joint Donors
+Ma Durga Vastra Samagri,20000,2.Single or Joint Donors
+Sandhi Puja,6000,100,6000 X Multiple Donors
+Maha Sashthi Puja,4000,100,4000 X Multiple Donors
+Maha Saptami Puja,6000,100,6000 X Multiple Donors
+Maha Ashtami Puja,6000,100,6000 X Multiple Donors
+Maha Navami Puja,6000,100,6000 X Multiple Donors
+Vaya Dashami Puja,4000,100,4000 X Multiple Donors
+Kojagari Laxmi Puja,3000,100,3000 X Multiple Donors
+Saptami Bhog,5000,100,5000 X Multiple donors
+Ashtami Bhog,5000,100,5000 X Muttiple donors
+Navami Bhog,5000,100,5000 X Multiple donors
+Kumar & Kanya Puja,3000,100,5000 X Muttiple donors
+Puja Sweets offerings: Sashl/Sapkami/Ashtami/Navam/Dashami,3000,100,3000 X Muttiple donors
+Pushpanjali Flowers : Sashti/Saptami/Ashtami/Navami/Dashami,2000,100,2000 X Multiple donors
+Puja Fruits offerings - Sasht/Saptami/AshtamiNavarfDashami,1000,100,1000 X Multiple donors
