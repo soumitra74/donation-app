@@ -126,7 +126,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
   }
 
   const totalAmount = donations.reduce((sum, d) => sum + d.amount, 0)
-  const totalDonors = donations.length
+  const totalDonors = donations.filter(d => d.status === 'completed').length
 
   const nextTower = () => {
     setCurrentTowerIndex((prev) => (prev + 1) % uniqueAssignedTowers.length)
@@ -622,7 +622,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <CardTitle className={`text-sm font-medium ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                My Donations
+                Donations
               </CardTitle>
             </CardHeader>
             <CardContent>

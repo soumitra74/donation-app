@@ -2,9 +2,9 @@ name,amount,max_count,description
 Ma Durga Idol,35000,2,Single or Joint Donors
 Annadanam (Community lunch)-Saptami,20000,2,Single or Joint Donors
 Annadanam (Community lunch)-Ashtami,20000,2,Single or Joint Donors
-Ma Lakshmi dol Kojgari Laxmi Puja),6000,1,Single Donor
+Ma Lakshmi idol Kojgari Laxmi Puja,6000,1,Single Donor
 Ma Durga Astra Samagi,20000,2,Single or Joint Donors
-Ma Durga Vastra Samagri,20000,2.Single or Joint Donors
+Ma Durga Vastra Samagri,20000,2,Single or Joint Donors
 Sandhi Puja,6000,100,6000 X Multiple Donors
 Maha Sashthi Puja,4000,100,4000 X Multiple Donors
 Maha Saptami Puja,6000,100,6000 X Multiple Donors
@@ -13,9 +13,8 @@ Maha Navami Puja,6000,100,6000 X Multiple Donors
 Vaya Dashami Puja,4000,100,4000 X Multiple Donors
 Kojagari Laxmi Puja,3000,100,3000 X Multiple Donors
 Saptami Bhog,5000,100,5000 X Multiple donors
-Ashtami Bhog,5000,100,5000 X Muttiple donors
+Ashtami Bhog,5000,100,5000 X Multiple donors
 Navami Bhog,5000,100,5000 X Multiple donors
-Kumar & Kanya Puja,3000,100,5000 X Muttiple donors
-Puja Sweets offerings: Sashl/Sapkami/Ashtami/Navam/Dashami,3000,100,3000 X Muttiple donors
-Pushpanjali Flowers : Sashti/Saptami/Ashtami/Navami/Dashami,2000,100,2000 X Multiple donors
-Puja Fruits offerings - Sasht/Saptami/AshtamiNavarfDashami,1000,100,1000 X Multiple donors
+Puja Sweets offerings: Sashti/Saptami/Ashtami/Navami/Dashami,3000,100,3000 X Multiple donors
+Pushpanjali Flowers: Sashti/Saptami/Ashtami/Navami/Dashami,2000,100,2000 X Multiple donors
+Puja Fruits offerings: Sashti/Saptami/Ashtami/Navami/Dashami,1000,100,1000 X Multiple donors

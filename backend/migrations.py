@@ -254,18 +254,18 @@ def seed_sample_data():
     """Seed the database with sample data"""
     with app.app_context():
         # Check if sample donors already exist
-        existing_donor1 = Donor.query.filter_by(email="john@example.com").first()
-        existing_donor2 = Donor.query.filter_by(email="jane@example.com").first()
+        # existing_donor1 = Donor.query.filter_by(email="john@example.com").first()
+        # existing_donor2 = Donor.query.filter_by(email="jane@example.com").first()
         
-        if not existing_donor1:
-            donor1 = Donor(name="John Doe", email="john@example.com", phone="1234567890")
-            db.session.add(donor1)
-            print("Created sample donor: John Doe")
+        # if not existing_donor1:
+        #     donor1 = Donor(name="John Doe", email="john@example.com", phone="1234567890")
+        #     db.session.add(donor1)
+        #     print("Created sample donor: John Doe")
         
-        if not existing_donor2:
-            donor2 = Donor(name="Jane Smith", email="jane@example.com", phone="0987654321")
-            db.session.add(donor2)
-            print("Created sample donor: Jane Smith")
+        # if not existing_donor2:
+        #     donor2 = Donor(name="Jane Smith", email="jane@example.com", phone="0987654321")
+        #     db.session.add(donor2)
+        #     print("Created sample donor: Jane Smith")
         
         # Check if sample campaign already exists
         existing_campaign = Campaign.query.filter_by(title="Apartment Donation Drive").first()
