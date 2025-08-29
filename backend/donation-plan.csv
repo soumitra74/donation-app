@@ -1,0 +1,11 @@
+name,amount,max_count,description
+Gold Sponsor,10000.00,5,Premium sponsorship with maximum visibility
+Silver Sponsor,5000.00,10,Standard sponsorship with good visibility
+Bronze Sponsor,2500.00,20,Basic sponsorship package
+Platinum Sponsor,15000.00,3,Ultimate sponsorship with exclusive benefits
+Diamond Sponsor,20000.00,2,Top-tier sponsorship with VIP treatment
+Emerald Sponsor,7500.00,8,Mid-tier sponsorship with enhanced features
+Ruby Sponsor,3000.00,15,Entry-level sponsorship package
+Sapphire Sponsor,6000.00,12,Quality sponsorship with good value
+Pearl Sponsor,1500.00,25,Affordable sponsorship option
+Crystal Sponsor,4000.00,18,Clear value sponsorship package

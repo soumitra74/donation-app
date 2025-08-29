@@ -8,6 +8,8 @@ from models import Donation, Donor, Campaign, User, Invite, UserRole, Sponsorshi
 from auth import auth_service
 from datetime import datetime, timedelta
 import json
+import csv
+import os
 
 def create_tables():
     """Create all tables"""
@@ -270,11 +272,11 @@ def seed_sample_data():
         if not existing_campaign:
             from datetime import datetime, timedelta
             campaign = Campaign(
-                title="Apartment Donation Drive",
+                title="SSR Durga Puja 2025",
                 description="Collecting donations from apartment residents",
-                goal_amount=100000.00,
+                goal_amount=300000.00,
                 start_date=datetime.now(),
-                end_date=datetime.now() + timedelta(days=30),
+                end_date=datetime.now() + timedelta(days=60),
                 is_active=True
             )
             db.session.add(campaign)
@@ -327,6 +329,53 @@ def seed_sample_sponsorships():
         db.session.commit()
         print("Sample sponsorship data seeding completed!")
 
+def seed_sponsorships_from_csv():
+    """Seed the database with sponsorship data from donation-plan.csv file"""
+    with app.app_context():
+        csv_file_path = os.path.join(os.path.dirname(__file__), 'donation-plan.csv')
+        
+        if not os.path.exists(csv_file_path):
+            print(f"CSV file not found at: {csv_file_path}")
+            print("Please ensure donation-plan.csv exists in the backend directory")
+            return
+        
+        try:
+            with open(csv_file_path, 'r', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                created_count = 0
+                skipped_count = 0
+                
+                for row in reader:
+                    # Check if sponsorship already exists
+                    existing_sponsorship = Sponsorship.query.filter_by(name=row['name']).first()
+                    
+                    if existing_sponsorship:
+                        print(f"Skipped existing sponsorship: {row['name']}")
+                        skipped_count += 1
+                        continue
+                    
+                    # Create new sponsorship
+                    sponsorship = Sponsorship(
+                        name=row['name'],
+                        amount=float(row['amount']),
+                        max_count=int(row['max_count']),
+                        booked=0,
+                        is_closed=False
+                    )
+                    
+                    db.session.add(sponsorship)
+                    created_count += 1
+                    print(f"Created sponsorship: {row['name']} - ₹{row['amount']} (Max: {row['max_count']})")
+                
+                db.session.commit()
+                print(f"\nCSV sponsorship seeding completed!")
+                print(f"Created: {created_count} sponsorships")
+                print(f"Skipped: {skipped_count} existing sponsorships")
+                
+        except Exception as e:
+            print(f"Error reading CSV file: {e}")
+            db.session.rollback()
+
 if __name__ == "__main__":
     print("Starting database migration...")
     create_tables()
@@ -338,5 +387,6 @@ if __name__ == "__main__":
     create_default_admin()
     create_sample_invites()
     seed_sample_data()
-    seed_sample_sponsorships()
+    # seed_sample_sponsorships()
+    seed_sponsorships_from_csv()
     print("Migration completed!")
