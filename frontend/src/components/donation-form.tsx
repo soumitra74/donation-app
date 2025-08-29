@@ -193,7 +193,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       // Validate sponsorship amount if sponsorship is selected
       if (formData.sponsorship && formData.sponsorshipId) {
         const selectedSponsorship = sponsorships.find(s => s.id.toString() === formData.sponsorshipId)
-        if (selectedSponsorship && amount < selectedSponsorship.amount) {
+        if (selectedSponsorship && amount < parseFloat(selectedSponsorship.amount)) {
           throw new Error(`Donation amount (₹${amount}) must be greater than or equal to the sponsorship amount (₹${selectedSponsorship.amount})`)
         }
       }

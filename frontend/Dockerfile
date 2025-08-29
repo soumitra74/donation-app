@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
@@ -6,7 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
+# Install all dependencies (including dev dependencies for building)
 RUN npm ci
 
 # Copy source code
@@ -14,6 +14,9 @@ COPY . .
 
 # Build the application
 RUN npm run build
+
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
 # Install serve to run the built application
 RUN npm install -g serve

@@ -66,7 +66,7 @@ def add_multiple_users():
                     
                     # Update password
                     password_hash = auth_service.hash_password(password)
-                    existing_user.password_hash = password_hash.decode('utf-8')
+                    existing_user.password_hash = password_hash
                     db.session.commit()
                     print(f"  ✅ Password updated")
                     
@@ -93,7 +93,7 @@ def add_multiple_users():
                 
                 # Set password
                 password_hash = auth_service.hash_password(password)
-                user.password_hash = password_hash.decode('utf-8')
+                user.password_hash = password_hash
                 
                 db.session.commit()
                 
