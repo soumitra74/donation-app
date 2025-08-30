@@ -118,6 +118,23 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo 'echo "Starting Donation App..."' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
+    echo '# Wait for database to be ready' >> /app/start.sh && \
+    echo 'echo "Waiting for database to be ready..."' >> /app/start.sh && \
+    echo 'cd /app/backend' >> /app/start.sh && \
+    echo 'python wait_for_db.py' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Initialize database' >> /app/start.sh && \
+    echo 'echo "Initializing database..."' >> /app/start.sh && \
+    echo 'python init_db.py' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Add users' >> /app/start.sh && \
+    echo 'echo "Adding users..."' >> /app/start.sh && \
+    echo 'python add_multiple_users.py' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Verify setup' >> /app/start.sh && \
+    echo 'echo "Running comprehensive verification..."' >> /app/start.sh && \
+    echo 'python verify_setup.py' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
     echo '# Create nginx pid directory' >> /app/start.sh && \
     echo 'mkdir -p /run/nginx' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
@@ -128,10 +145,9 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '# Wait a moment for nginx to start' >> /app/start.sh && \
     echo 'sleep 2' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Start backend as app user' >> /app/start.sh && \
+    echo '# Start backend' >> /app/start.sh && \
     echo 'echo "Starting backend..."' >> /app/start.sh && \
-    echo 'cd /app/backend' >> /app/start.sh && \
-    echo 'su app -c "python run.py"' >> /app/start.sh
+    echo 'python run.py' >> /app/start.sh
 
 # Make startup script executable
 RUN chmod +x /app/start.sh

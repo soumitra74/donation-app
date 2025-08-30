@@ -7,7 +7,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile.production
     dockerContext: .
-    dockerCommand: sh -c "cd /app/backend && python wait_for_db.py && python init_db.py && python add_multiple_users.py && python verify_setup.py && /app/start.sh"
+
     envVars:
       - key: DATABASE_URL
         value: postgresql://user:password@host:5432/database
