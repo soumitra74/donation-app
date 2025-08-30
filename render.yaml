@@ -7,6 +7,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile.production
     dockerContext: .
+    startCommand: bash /app/start.sh
 
     envVars:
       - key: DATABASE_URL
@@ -27,3 +28,4 @@ services:
         - .dockerignore
     healthCheckPath: /health
     autoDeploy: true
+    # Force clean deployment

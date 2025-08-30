@@ -158,5 +158,5 @@ RUN useradd --create-home --shell /bin/bash app && chown -R app:app /app
 # Expose port (Render uses port 10000)
 EXPOSE 10000
 
-# Default command
-CMD ["/app/start.sh"]
+# Default command - use bash to ensure proper execution
+CMD ["bash", "/app/start.sh"]

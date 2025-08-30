@@ -21,6 +21,10 @@ wheels/
 *.egg
 MANIFEST
 
+# Pipenv (not used in production)
+Pipfile
+Pipfile.lock
+
 # Virtual environments
 .env
 .venv
@@ -69,8 +73,6 @@ Thumbs.db
 *.log
 logs/
 
-# Docker
-.dockerignore
 
 # Environment variables
 .env.local
@@ -79,3 +81,10 @@ logs/
 .env.production.local
 
 .vercel
+
+test_*.py
+add_user.py
+fix_user_role.py
+*.md
+*.ps1
+*.bat
