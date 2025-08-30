@@ -5,7 +5,6 @@ services:
     env: postgresql
     plan: free
     ipAllowList: []
-    maxConnections: 100
 
   # Web Application Service
   - type: web
