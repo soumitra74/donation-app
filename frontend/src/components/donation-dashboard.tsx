@@ -5,10 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
-import { ChangePassword } from "@/components/change-password"
 import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Settings, Download, User as UserIcon } from "lucide-react"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
 import { donationsService, Donation, DonationStats } from "@/services/donations"
 
@@ -28,7 +27,6 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
     null,
   )
   const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
-  const [showChangePassword, setShowChangePassword] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -212,20 +210,6 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
             </div>
             
             <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowChangePassword(true)}
-                className={`${
-                  theme === 'ambient' 
-                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                    : theme === 'dark'
-                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Change Password
-              </Button>
               <Button 
                 variant="outline" 
                 onClick={onLogout}
@@ -800,30 +784,26 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
             <UserIcon className="h-4 w-4 mr-2" />
             Profile
           </Button>
-          <Button 
-            variant="outline" 
-            onClick={onLogout}
-            className={`${
-              theme === 'ambient' 
-                ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                : theme === 'dark'
-                ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="mt-2">
+            <Button 
+              variant="outline" 
+              onClick={onLogout}
+              className={`${
+                theme === 'ambient' 
+                  ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                  : theme === 'dark'
+                  ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </main>
 
-      {/* Change Password Modal */}
-      {showChangePassword && (
-        <ChangePassword
-          onSuccess={() => setShowChangePassword(false)}
-          onCancel={() => setShowChangePassword(false)}
-        />
-      )}
+
     </div>
   )
 }

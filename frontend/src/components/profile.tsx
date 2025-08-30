@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { User, UserRole } from "@/services/auth"
-import { ArrowLeft, Upload, Trash2, Download, User as UserIcon } from "lucide-react"
+import { ArrowLeft, Upload, Trash2, Download, User as UserIcon, Settings } from "lucide-react"
+import { ChangePassword } from "@/components/change-password"
 
 interface ProfileProps {
   user: User
@@ -23,6 +24,7 @@ export function Profile({ user, roles, onBack, theme }: ProfileProps) {
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [showChangePassword, setShowChangePassword] = useState(false)
 
   useEffect(() => {
     loadQrCode()
@@ -280,6 +282,24 @@ export function Profile({ user, roles, onBack, theme }: ProfileProps) {
                   ))}
                 </div>
               </div>
+              
+              {/* Change Password Button */}
+              <div className="pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowChangePassword(true)}
+                  className={`w-full ${
+                    theme === 'ambient' 
+                      ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                      : theme === 'dark'
+                      ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Change Password
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -396,6 +416,14 @@ export function Profile({ user, roles, onBack, theme }: ProfileProps) {
           </Card>
         </div>
       </main>
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <ChangePassword
+          onSuccess={() => setShowChangePassword(false)}
+          onCancel={() => setShowChangePassword(false)}
+        />
+      )}
     </div>
   )
 }
