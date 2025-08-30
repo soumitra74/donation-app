@@ -4,14 +4,13 @@ services:
     name: donation-app-db
     env: postgresql
     plan: free
-    ipAllowList: []
 
   # Web Application Service
   - type: web
     name: donation-app
     env: docker
     plan: free
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.production
     dockerContext: .
     dockerCommand: >
       sh -c "
@@ -44,8 +43,7 @@ services:
       paths:
         - backend/**
         - frontend/**
-        - Dockerfile
+        - Dockerfile.production
         - .dockerignore
-        - docker-compose.combined.yml
     healthCheckPath: /health
     autoDeploy: true
