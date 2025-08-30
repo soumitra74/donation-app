@@ -19,11 +19,13 @@ services:
       timeout: 5s
       retries: 5
 
-  # Combined Frontend and Backend Application
+  # Combined Backend + Frontend Application
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://localhost/api/v1
     container_name: ssr_dp_2025_app
     environment:
       DATABASE_URL: postgresql://ssr_dp_2025_user:supsersecret@db:5432/ssr_dp_2025
@@ -33,7 +35,6 @@ services:
       VITE_API_URL: http://localhost/api/v1
     ports:
       - "80:80"
-      - "5000:5000"
     depends_on:
       db:
         condition: service_healthy
@@ -42,6 +43,20 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./frontend:/app/frontend
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        cd /app/backend &&
+        python wait_for_db.py &&
+        echo 'Initializing database...' &&
+        python init_db.py &&
+        echo 'Adding users...' &&
+        python add_multiple_users.py &&
+        echo 'Running comprehensive verification...' &&
+        python verify_setup.py &&
+        echo 'Starting combined application...' &&
+        /app/start.sh
+      "
 
 volumes:
   postgres_data:

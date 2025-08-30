@@ -28,7 +28,7 @@ export interface UpdateSponsorshipData {
   is_booked?: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/api/v1'
 
 class SponsorshipsService {
   private token: string | null = null
