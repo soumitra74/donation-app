@@ -1,11 +1,6 @@
 services:
-  # PostgreSQL Database Service
-  - type: pserv
-    name: donation-app-db
-    env: postgresql
-    plan: free
-
-  # Web Application Service
+  # Web Application Service Only
+  # Note: Create PostgreSQL database manually in Render dashboard
   - type: web
     name: donation-app
     env: docker
@@ -28,9 +23,7 @@ services:
       "
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: donation-app-db
-          property: connectionString
+        value: postgresql://user:password@host:5432/database
       - key: SECRET_KEY
         generateValue: true
       - key: JWT_SECRET_KEY
