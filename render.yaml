@@ -1,0 +1,52 @@
+services:
+  # PostgreSQL Database Service
+  - type: pserv
+    name: donation-app-db
+    env: postgresql
+    plan: free
+    ipAllowList: []
+    maxConnections: 100
+
+  # Web Application Service
+  - type: web
+    name: donation-app
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        cd /app/backend &&
+        python wait_for_db.py &&
+        echo 'Initializing database...' &&
+        python init_db.py &&
+        echo 'Adding users...' &&
+        python add_multiple_users.py &&
+        echo 'Running comprehensive verification...' &&
+        python verify_setup.py &&
+        echo 'Starting combined application...' &&
+        /app/start.sh
+      "
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: donation-app-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: VITE_API_URL
+        value: https://donation-app.onrender.com/api/v1
+    buildFilter:
+      paths:
+        - backend/**
+        - frontend/**
+        - Dockerfile
+        - .dockerignore
+        - docker-compose.combined.yml
+    healthCheckPath: /health
+    autoDeploy: true
