@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, AlertTriangle, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { donationsService, CreateDonationData } from "@/services/donations"
@@ -41,6 +41,13 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const [loadingQr, setLoadingQr] = useState(false)
   const [sponsorships, setSponsorships] = useState<Sponsorship[]>([])
   const [loadingSponsorships, setLoadingSponsorships] = useState(false)
+  const [showSkippedWarning, setShowSkippedWarning] = useState(false)
+  const [skippedApartmentInfo, setSkippedApartmentInfo] = useState<{
+    tower: number
+    floor: number
+    unit: number
+    notes?: string
+  } | null>(null)
 
   // Update currentApartment when preselectedApartment changes
   useEffect(() => {
@@ -58,6 +65,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     loadSponsorships()
   }, [])
 
+  // Check apartment status when currentApartment changes
+  useEffect(() => {
+    checkApartmentStatus()
+  }, [currentApartment])
+
   // Cleanup QR code URL when component unmounts or QR code changes
   useEffect(() => {
     return () => {
@@ -66,6 +78,34 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       }
     }
   }, [qrCodeUrl])
+
+  const checkApartmentStatus = async () => {
+    try {
+      const donation = await donationsService.getApartmentDonation(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit
+      )
+      
+      if (donation && donation.status === 'skipped') {
+        setSkippedApartmentInfo({
+          tower: currentApartment.tower,
+          floor: currentApartment.floor,
+          unit: currentApartment.unit,
+          notes: donation.notes
+        })
+        setShowSkippedWarning(true)
+      } else {
+        setShowSkippedWarning(false)
+        setSkippedApartmentInfo(null)
+      }
+    } catch (error) {
+      console.error('Failed to check apartment status:', error)
+      // If there's an error, assume apartment is not skipped
+      setShowSkippedWarning(false)
+      setSkippedApartmentInfo(null)
+    }
+  }
 
   const loadSponsorships = async () => {
     setLoadingSponsorships(true)
@@ -421,6 +461,37 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                 </Button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Skipped Apartment Warning */}
+      {showSkippedWarning && skippedApartmentInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
+          <div className={`rounded-lg p-6 text-center shadow-xl max-w-sm mx-4 ${getCardClasses()}`}>
+            <div className="flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 mr-2 text-red-500" />
+              <span className={`font-semibold text-lg ${getTextClasses()}`}>Apartment Skipped!</span>
+            </div>
+            <p className={`text-sm mb-4 ${getSubtextClasses()}`}>
+              Apartment <span className="font-semibold text-blue-600">{getFlatNumber()}</span> has already been marked as skipped.
+              {skippedApartmentInfo.notes && (
+                <span className="block mt-2 text-xs">
+                  Reason: {skippedApartmentInfo.notes}
+                </span>
+              )}
+            </p>
+            <Button
+              variant="outline"
+              className="mt-2"
+              onClick={() => {
+                setShowSkippedWarning(false)
+                setSkippedApartmentInfo(null)
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Continue Anyway
+            </Button>
           </div>
         </div>
       )}
