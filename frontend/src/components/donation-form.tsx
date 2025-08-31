@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, AlertTriangle, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { donationsService, CreateDonationData } from "@/services/donations"
+import { donationsService, CreateDonationData, Donation } from "@/services/donations"
 import { sponsorshipsService, Sponsorship } from "@/services/sponsorships"
 import { authService } from "@/services/auth"
 
@@ -48,6 +48,8 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     unit: number
     notes?: string
   } | null>(null)
+  const [existingDonation, setExistingDonation] = useState<Donation | null>(null)
+  const [loadingDonation, setLoadingDonation] = useState(false)
 
   // Update currentApartment when preselectedApartment changes
   useEffect(() => {
@@ -68,6 +70,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   // Check apartment status when currentApartment changes
   useEffect(() => {
     checkApartmentStatus()
+  }, [currentApartment])
+
+  // Load existing donation data when currentApartment changes
+  useEffect(() => {
+    loadExistingDonation()
   }, [currentApartment])
 
   // Cleanup QR code URL when component unmounts or QR code changes
@@ -104,6 +111,52 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       // If there's an error, assume apartment is not skipped
       setShowSkippedWarning(false)
       setSkippedApartmentInfo(null)
+    }
+  }
+
+  const loadExistingDonation = async () => {
+    setLoadingDonation(true)
+    try {
+      const donation = await donationsService.getApartmentDonation(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit
+      )
+      
+      if (donation && donation.status === 'completed') {
+        setExistingDonation(donation)
+        // Prefill form with existing donation data
+        setFormData({
+          donorName: donation.donor_name || "",
+          amount: donation.amount.toString() || "",
+          phoneNumber: donation.phone_number || "",
+          headCount: donation.head_count?.toString() || "",
+          paymentMethod: (donation.payment_method as "cash" | "upi-self" | "upi-other") || "cash",
+          upiOtherPerson: donation.upi_other_person || "",
+          sponsorship: donation.sponsorship || "",
+          sponsorshipId: donation.sponsorship_id?.toString() || "",
+          notes: donation.notes || "",
+        })
+      } else {
+        setExistingDonation(null)
+        // Reset form to empty state
+        setFormData({
+          donorName: "",
+          amount: "",
+          phoneNumber: "",
+          headCount: "",
+          paymentMethod: "cash",
+          upiOtherPerson: "",
+          sponsorship: "",
+          sponsorshipId: "",
+          notes: "",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load existing donation:', error)
+      setExistingDonation(null)
+    } finally {
+      setLoadingDonation(false)
     }
   }
 
@@ -222,7 +275,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsTransitioning(true)
-    setTransitionMessage("Recording donation...")
+    setTransitionMessage(existingDonation ? "Updating donation..." : "Recording donation...")
 
     try {
       const amount = parseFloat(formData.amount)
@@ -508,6 +561,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
               <div className={`text-sm ${getSubtextClasses()}`}>
                 Block {String.fromCharCode(64 + ((preselectedApartment?.tower || 1)))} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
               </div>
+              {existingDonation && (
+                <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-green-400' : theme === 'ambient' ? 'text-green-300' : 'text-green-600'}`}>
+                  ✓ Existing donation loaded
+                </div>
+              )}
             </div>
 
             <Button variant="ghost" size="sm" onClick={navigateNext} className="p-2">
@@ -519,7 +577,13 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         <div className="p-4">
           <Card className={getCardClasses()}>
             <CardContent className="pt-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {loadingDonation ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className={`ml-2 ${getTextClasses()}`}>Loading donation data...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
                   <Input
                     id="amount"
@@ -692,12 +756,27 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                 </div>
 
                 <div className="flex flex-col gap-3 pt-4">
+                  {existingDonation && (
+                    <div className={`text-sm p-3 rounded-lg mb-2 ${
+                      theme === 'dark' ? 'bg-blue-900/50 text-blue-200 border border-blue-700' : 
+                      theme === 'ambient' ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30' : 
+                      'bg-blue-50 text-blue-800 border border-blue-200'
+                    }`}>
+                      <div className="font-medium mb-1">Existing donation found</div>
+                      <div className="text-xs opacity-80">
+                        Donor: {existingDonation.donor_name} • Amount: ₹{existingDonation.amount}
+                        {existingDonation.created_at && (
+                          <span> • Date: {new Date(existingDonation.created_at).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <Button
                     type="submit"
                     className="h-12 bg-blue-600 hover:bg-blue-700 text-base font-medium"
                     disabled={!formData.donorName || !formData.amount || isTransitioning}
                   >
-                    {isTransitioning ? "Recording..." : "Record Donation"}
+                    {isTransitioning ? "Recording..." : existingDonation ? "Update Donation" : "Record Donation"}
                   </Button>
                   <Button
                     type="button"
@@ -717,6 +796,30 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   >
                     Skip
                   </Button>
+                  {existingDonation && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setExistingDonation(null)
+                        setFormData({
+                          donorName: "",
+                          amount: "",
+                          phoneNumber: "",
+                          headCount: "",
+                          paymentMethod: "cash",
+                          upiOtherPerson: "",
+                          sponsorship: "",
+                          sponsorshipId: "",
+                          notes: "",
+                        })
+                      }}
+                      className="h-12 text-base bg-transparent"
+                      disabled={isTransitioning}
+                    >
+                      Start Fresh
+                    </Button>
+                  )}
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -728,6 +831,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   </Button>
                 </div>
               </form>
+              )}
             </CardContent>
           </Card>
         </div>
