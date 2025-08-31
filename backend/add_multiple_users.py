@@ -21,11 +21,11 @@ def add_multiple_users():
     users_data = [
         ("abhijit.banerjee5@gmail.com", "Abhijit Banerjee", [7, 8]),  # G and H
         ("bandpramit@gmail.com", "Pramit Bandyopadhyay", [1, 2, 10]),  # A, B and J
-        ("abhijit.ray.chaudhury@gmail.com", "Abhijit Ray Chaudhury", [7, 8]),  # G and H
+        ("abhijit.ray.chaudhury@gmail.com", "Abhijit Ray Chaudhury", [3, 4]),  # G and H
         ("indranil.cse@gmail.com", "Indranil Biswas", [8]),  # H
         ("paulsanjib@hotmail.com", "Sanjib Paul", [3, 4]),  # C and D
         ("subhra.roy@gmail.com", "Subhra Roy", [1, 2]),  # A and B
-        ("sibnath_ghosh@yahoo.com", "Sibnath Ghosh", [1, 10]),  # A and J
+        # ("sibnath_ghosh@yahoo.com", "Sibnath Ghosh", [1, 10]),  # A and J
         ("sumantamallick.ssr@gmail.com", "Sumanta Mallick", [4, 5, 6, 7]),  # D, E, F and G
         ("deep.mca84@gmail.com", "Sandeep Datta", [1, 2]),  # A and B
         ("surojeets@yahoo.com", "Surojeet Sengupta", [5, 6]),  # E and F
