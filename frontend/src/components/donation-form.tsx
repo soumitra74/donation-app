@@ -33,7 +33,6 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     tower: preselectedApartment?.tower || 1,
     floor: preselectedApartment?.floor || 1,
     unit: preselectedApartment?.unit || 1,
-    towerName: String.fromCharCode(64 + ((preselectedApartment?.tower || 1))),
   })
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [transitionMessage, setTransitionMessage] = useState("")
@@ -507,7 +506,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
             <div className="text-center">
               <div className={`text-2xl font-bold text-blue-600 ${theme === 'ambient' ? 'text-blue-400' : ''}`}>{getFlatNumber()}</div>
               <div className={`text-sm ${getSubtextClasses()}`}>
-                Block {currentApartment.towerName} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
+                Block {String.fromCharCode(64 + ((preselectedApartment?.tower || 1)))} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
               </div>
             </div>
 
