@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { User, UserRole } from "@/services/auth"
-import { ArrowLeft, Upload, Trash2, Download, User as UserIcon, Settings } from "lucide-react"
+import { User, UserRole, authService } from "@/services/auth"
+import { ArrowLeft, Upload, Trash2, Download, User as UserIcon, Settings, UserPlus } from "lucide-react"
 import { ChangePassword } from "@/components/change-password"
+import { AddUser } from "@/components/add-user"
 
 interface ProfileProps {
   user: User
@@ -25,6 +26,10 @@ export function Profile({ user, roles, onBack, theme }: ProfileProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [showChangePassword, setShowChangePassword] = useState(false)
+  const [showAddUser, setShowAddUser] = useState(false)
+
+  // Check if user is admin
+  const isAdmin = authService.hasRole(roles, 'admin')
 
   useEffect(() => {
     loadQrCode()
@@ -300,6 +305,26 @@ export function Profile({ user, roles, onBack, theme }: ProfileProps) {
                   Change Password
                 </Button>
               </div>
+
+              {/* Add User Button (Admin Only) */}
+              {isAdmin && (
+                <div className="pt-3">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowAddUser(true)}
+                    className={`w-full ${
+                      theme === 'ambient' 
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add New User
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -422,6 +447,15 @@ export function Profile({ user, roles, onBack, theme }: ProfileProps) {
         <ChangePassword
           onSuccess={() => setShowChangePassword(false)}
           onCancel={() => setShowChangePassword(false)}
+        />
+      )}
+
+      {/* Add User Modal */}
+      {showAddUser && (
+        <AddUser
+          onSuccess={() => setShowAddUser(false)}
+          onCancel={() => setShowAddUser(false)}
+          theme={theme}
         />
       )}
     </div>

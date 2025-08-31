@@ -29,6 +29,8 @@ def add_multiple_users():
         ("sumantamallick.ssr@gmail.com", "Sumanta Mallick", [4, 5, 6, 7]),  # D, E, F and G
         ("deep.mca84@gmail.com", "Sandeep Datta", [1, 2]),  # A and B
         ("surojeets@yahoo.com", "Surojeet Sengupta", [5, 6]),  # E and F
+        ("soumitra.ghosh.iit@gmail.com", "Soumitra Ghosh", [3,4]),  # C and D
+        ("admin@donationapp.com", "System Administrator", [1, 2, 3, 4, 5, 6, 7, 8, 10]),  # All towers
     ]
     
     password = "Welcome@123"
@@ -51,18 +53,23 @@ def add_multiple_users():
                     user_role = UserRole.query.filter_by(user_id=existing_user.id).first()
                     if user_role:
                         user_role.assigned_towers = json.dumps(towers)
+                        # Update role to admin for admin@donationapp.com
+                        if email == 'admin@donationapp.com':
+                            user_role.role = 'admin'
                         db.session.commit()
                         print(f"  ✅ Updated tower assignments to: {towers}")
                     else:
                         # Create user role if it doesn't exist
+                        role = 'admin' if email == 'admin@donationapp.com' else 'collector'
                         user_role = UserRole(
                             user_id=existing_user.id,
-                            role='collector',
+                            role=role,
                             assigned_towers=json.dumps(towers)
                         )
                         db.session.add(user_role)
                         db.session.commit()
                         print(f"  ✅ Created user role with towers: {towers}")
+                        print(f"  ✅ Role: {role}")
                     
                     # Update password
                     password_hash = auth_service.hash_password(password)
@@ -83,9 +90,11 @@ def add_multiple_users():
                 db.session.flush()  # Get user ID
                 
                 # Create user role with tower assignments
+                # Assign admin role for admin@donationapp.com, collector for others
+                role = 'admin' if email == 'admin@donationapp.com' else 'collector'
                 user_role = UserRole(
                     user_id=user.id,
-                    role='collector',
+                    role=role,
                     assigned_towers=json.dumps(towers)
                 )
                 
@@ -101,7 +110,7 @@ def add_multiple_users():
                 tower_letters = [chr(64 + tower) for tower in towers]
                 
                 print(f"  ✅ Created user with ID: {user.id}")
-                print(f"  ✅ Role: collector")
+                print(f"  ✅ Role: {role}")
                 print(f"  ✅ Assigned Towers: {towers} ({', '.join(tower_letters)})")
                 print(f"  ✅ Password: {password}")
             
@@ -110,7 +119,7 @@ def add_multiple_users():
             print("=" * 60)
             print(f"✅ All users processed successfully!")
             print(f"📧 Password for all users: {password}")
-            print(f"🔐 All users have 'collector' role (non-admin)")
+            print(f"🔐 Users have appropriate roles (admin for admin@donationapp.com, collector for others)")
             
         except Exception as e:
             db.session.rollback()

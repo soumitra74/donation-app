@@ -47,8 +47,8 @@ def verify_database_setup():
             
             # Check specific users
             test_users = [
-                ("deep.mca84@gmail.com", "Deep MCA"),
-                ("surojeets@yahoo.com", "Surojeet"),
+                ("deep.mca84@gmail.com", "Sandeep Datta"),
+                ("surojeets@yahoo.com", "Surojeet Sengupta"),
                 ("admin@donationapp.com", "System Administrator")
             ]
             
