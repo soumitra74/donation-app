@@ -397,8 +397,6 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     handleQrPopupClose()
   }
 
-  const donationAmount = Number.parseFloat(formData.amount) || 0
-
   const getThemeClasses = () => {
     switch (theme) {
       case 'dark':
@@ -672,51 +670,49 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   />
                 </div>
 
-                {donationAmount > 500 && (
-                  <div className="space-y-3">
-                    <Select
-                      value={formData.sponsorship}
-                      onValueChange={handleSponsorshipChange}
-                      disabled={isTransitioning}
-                    >
-                      <SelectTrigger className={`h-12 ${
-                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
-                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
-                        'bg-white text-gray-900'
-                      }`}>
-                        <SelectValue placeholder="Sponsorship" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingSponsorships ? (
-                          <SelectItem value="">Loading sponsorships...</SelectItem>
-                        ) : sponsorships.length === 0 ? (
-                          <SelectItem value="">No sponsorships available</SelectItem>
-                        ) : (
-                          <>
-                            <SelectItem value="">Select a sponsorship</SelectItem>
-                            {sponsorships.map((sponsorship) => (
-                              <SelectItem key={sponsorship.id} value={sponsorship.name}>
-                                {sponsorship.name} (₹{sponsorship.amount})
-                              </SelectItem>
-                            ))}
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-3">
+                  <Select
+                    value={formData.sponsorship}
+                    onValueChange={handleSponsorshipChange}
+                    disabled={isTransitioning}
+                  >
+                    <SelectTrigger className={`h-12 ${
+                      theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
+                      theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
+                      'bg-white text-gray-900'
+                    }`}>
+                      <SelectValue placeholder="Sponsorship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loadingSponsorships ? (
+                        <SelectItem value="">Loading sponsorships...</SelectItem>
+                      ) : sponsorships.length === 0 ? (
+                        <SelectItem value="">No sponsorships available</SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="">Select a sponsorship</SelectItem>
+                          {sponsorships.map((sponsorship) => (
+                            <SelectItem key={sponsorship.id} value={sponsorship.name}>
+                              {sponsorship.name} (₹{sponsorship.amount})
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
 
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange("notes", e.target.value)}
-                      placeholder="Notes"
-                      className={`min-h-[80px] ${
-                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
-                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
-                        'bg-white text-gray-900 placeholder-gray-500'
-                      }`}
-                      disabled={isTransitioning}
-                    />
-                  </div>
-                )}
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    placeholder="Notes"
+                    className={`min-h-[80px] ${
+                      theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
+                      theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
+                      'bg-white text-gray-900 placeholder-gray-500'
+                    }`}
+                    disabled={isTransitioning}
+                  />
+                </div>
 
                 <div className={`border-t pt-6 ${
                   theme === 'dark' ? 'border-gray-700' : 

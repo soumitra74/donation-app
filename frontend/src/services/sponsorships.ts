@@ -28,7 +28,7 @@ export interface UpdateSponsorshipData {
   is_booked?: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/api/v1'
 
 class SponsorshipsService {
   private token: string | null = null
@@ -38,7 +38,7 @@ class SponsorshipsService {
     this.token = localStorage.getItem('donation-app-token')
   }
 
-  private async makeRequest(endpoint: string, options: RequestInit = {}, requireAuth: boolean = true): Promise<any> {
+  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
     const url = `${API_BASE_URL}${endpoint}`
     
     const config: RequestInit = {
@@ -49,8 +49,8 @@ class SponsorshipsService {
       ...options,
     }
 
-    // Add auth token if available and required
-    if (requireAuth && this.token) {
+    // Add auth token if available
+    if (this.token) {
       config.headers = {
         ...config.headers,
         'Authorization': `Bearer ${this.token}`,
@@ -74,7 +74,7 @@ class SponsorshipsService {
 
   // Get all sponsorships
   async getSponsorships(): Promise<Sponsorship[]> {
-    return await this.makeRequest('/sponsorships', {}, false)
+    return await this.makeRequest('/sponsorships')
   }
 
   // Get a specific sponsorship

@@ -249,6 +249,7 @@ def create_campaign():
 
 # Sponsorship endpoints
 @api_bp.route('/sponsorships', methods=['GET'])
+@require_auth
 def get_sponsorships():
     """Get all sponsorships"""
     sponsorships = Sponsorship.query.all()
