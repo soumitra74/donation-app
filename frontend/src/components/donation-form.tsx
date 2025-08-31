@@ -278,7 +278,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     setTransitionMessage(existingDonation ? "Updating donation..." : "Recording donation...")
 
     try {
-      const amount = parseFloat(formData.amount)
+      const amount = parseInt(formData.amount)
       if (isNaN(amount) || amount <= 0) {
         throw new Error("Please enter a valid amount")
       }
@@ -286,7 +286,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       // Validate sponsorship amount if sponsorship is selected
       if (formData.sponsorship && formData.sponsorshipId) {
         const selectedSponsorship = sponsorships.find(s => s.id.toString() === formData.sponsorshipId)
-        if (selectedSponsorship && amount < parseFloat(selectedSponsorship.amount)) {
+        if (selectedSponsorship && amount < parseInt(selectedSponsorship.amount)) {
           throw new Error(`Donation amount (₹${amount}) must be greater than or equal to the sponsorship amount (₹${selectedSponsorship.amount})`)
         }
       }
@@ -376,7 +376,20 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const newFormData = { ...prev, [field]: value }
+      
+      // Clear sponsorship data if amount is less than 501
+      if (field === 'amount') {
+        const amount = parseInt(value) || 0
+        if (amount < 501) {
+          newFormData.sponsorship = ""
+          newFormData.sponsorshipId = ""
+        }
+      }
+      
+      return newFormData
+    })
   }
 
   const handleQrPopupClose = () => {
@@ -671,35 +684,37 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                 </div>
 
                 <div className="space-y-3">
-                  <Select
-                    value={formData.sponsorship}
-                    onValueChange={handleSponsorshipChange}
-                    disabled={isTransitioning}
-                  >
-                    <SelectTrigger className={`h-12 ${
-                      theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
-                      theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
-                      'bg-white text-gray-900'
-                    }`}>
-                      <SelectValue placeholder="Sponsorship" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingSponsorships ? (
-                        <SelectItem value="">Loading sponsorships...</SelectItem>
-                      ) : sponsorships.length === 0 ? (
-                        <SelectItem value="">No sponsorships available</SelectItem>
-                      ) : (
-                        <>
-                          <SelectItem value="">Select a sponsorship</SelectItem>
-                          {sponsorships.map((sponsorship) => (
-                            <SelectItem key={sponsorship.id} value={sponsorship.name}>
-                              {sponsorship.name} (₹{sponsorship.amount})
-                            </SelectItem>
-                          ))}
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  {parseInt(formData.amount) >= 501 && (
+                    <Select
+                      value={formData.sponsorship}
+                      onValueChange={handleSponsorshipChange}
+                      disabled={isTransitioning}
+                    >
+                      <SelectTrigger className={`h-12 ${
+                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
+                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
+                        'bg-white text-gray-900'
+                      }`}>
+                        <SelectValue placeholder="Sponsorship" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {loadingSponsorships ? (
+                          <SelectItem value="">Loading sponsorships...</SelectItem>
+                        ) : sponsorships.length === 0 ? (
+                          <SelectItem value="">No sponsorships available</SelectItem>
+                        ) : (
+                          <>
+                            <SelectItem value="">Select a sponsorship</SelectItem>
+                            {sponsorships.map((sponsorship) => (
+                              <SelectItem key={sponsorship.id} value={sponsorship.name}>
+                                {sponsorship.name} (₹{sponsorship.amount})
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
 
                   <Textarea
                     value={formData.notes}

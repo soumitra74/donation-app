@@ -6,7 +6,7 @@
 export interface Donation {
   id: number
   donor_name: string
-  amount: number
+  amount: number  // Integer amount in rupees
   tower: number
   floor: number
   unit: number
@@ -34,7 +34,7 @@ export interface DonationStats {
 
 export interface CreateDonationData {
   donor_name: string
-  amount: number
+  amount: number  // Integer amount in rupees
   tower: number
   floor: number
   unit: number

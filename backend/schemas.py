@@ -95,7 +95,7 @@ class CampaignSchema(SQLAlchemyAutoSchema):
     
     # Custom validation
     title = fields.Str(required=True, validate=Length(min=1, max=200))
-    goal_amount = fields.Decimal(required=True, validate=Range(min=0.01))
+    goal_amount = fields.Int(required=True, validate=Range(min=1))  # Integer amount in rupees
     start_date = fields.DateTime(required=True)
     end_date = fields.DateTime(required=True)
     
@@ -111,7 +111,7 @@ class SponsorshipSchema(SQLAlchemyAutoSchema):
     
     # Custom validation
     name = fields.Str(required=True, validate=Length(min=1, max=200))
-    amount = fields.Decimal(required=True, validate=Range(min=0.01))
+    amount = fields.Int(required=True, validate=Range(min=1))  # Integer amount in rupees
     max_count = fields.Int(required=True, validate=Range(min=1))
     booked = fields.Int(required=False, validate=Range(min=0))
     is_closed = fields.Bool(default=False)
@@ -123,7 +123,7 @@ class DonationSchema(SQLAlchemyAutoSchema):
         include_fk = True
     
     # Custom validation
-    amount = fields.Decimal(required=True, validate=Range(min=0))
+    amount = fields.Int(required=True, validate=Range(min=1))  # Integer amount in rupees
     donor_name = fields.Str(required=True, validate=Length(min=1, max=100))
     tower = fields.Int(required=True, validate=Range(min=1, max=100))
     floor = fields.Int(required=True, validate=Range(min=1, max=100))
