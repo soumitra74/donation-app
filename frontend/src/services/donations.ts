@@ -6,7 +6,7 @@
 export interface Donation {
   id: number
   donor_name: string
-  amount: number
+  amount: number  // Integer amount in rupees
   tower: number
   floor: number
   unit: number
@@ -34,7 +34,7 @@ export interface DonationStats {
 
 export interface CreateDonationData {
   donor_name: string
-  amount: number
+  amount: number  // Integer amount in rupees
   tower: number
   floor: number
   unit: number
@@ -105,6 +105,15 @@ class DonationsService {
   async createDonation(donationData: CreateDonationData): Promise<Donation> {
     return await this.makeRequest('/donations', {
       method: 'POST',
+      body: JSON.stringify(donationData),
+    })
+  }
+
+  // Update an existing donation
+  async updateDonation(donationId: number, donationData: CreateDonationData): Promise<Donation> {
+    const endpoint = `/donations/${donationId}`
+    return await this.makeRequest(endpoint, {
+      method: 'PUT',
       body: JSON.stringify(donationData),
     })
   }

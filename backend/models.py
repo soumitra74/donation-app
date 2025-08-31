@@ -92,8 +92,8 @@ class Campaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    goal_amount = db.Column(db.Numeric(10, 2), nullable=False)
-    current_amount = db.Column(db.Numeric(10, 2), default=0)
+    goal_amount = db.Column(db.Integer, nullable=False)  # Integer amount in rupees
+    current_amount = db.Column(db.Integer, default=0)  # Integer amount in rupees
     start_date = db.Column(db.DateTime, nullable=False)
     end_date = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
@@ -112,7 +112,7 @@ class Sponsorship(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
-    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)  # Integer amount in rupees
     max_count = db.Column(db.Integer, nullable=False, default=1)
     booked = db.Column(db.Integer, nullable=False, default=0)  # Track number of bookings
     is_closed = db.Column(db.Boolean, default=False)
@@ -127,7 +127,7 @@ class Donation(db.Model):
     __tablename__ = 'donations'
     
     id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)  # Integer amount in rupees
     
     # Apartment-specific fields (for frontend compatibility)
     tower = db.Column(db.Integer, nullable=False)

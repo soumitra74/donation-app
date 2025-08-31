@@ -6,7 +6,7 @@
 export interface Sponsorship {
   id: number
   name: string
-  amount: string
+  amount: number  // Integer amount in rupees
   max_count: number
   booked: number
   is_closed: boolean

@@ -51,6 +51,7 @@ COPY backend/ .
 
 # Make scripts executable
 RUN chmod +x wait_for_db.py
+RUN chmod +x rebuild_sponsorships.py
 
 # Final stage
 FROM python:3.12-slim
@@ -120,6 +121,15 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo 'echo "Starting Donation App..."' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
+    echo '# Wait for database to be ready' >> /app/start.sh && \
+    echo 'echo "Waiting for database..."' >> /app/start.sh && \
+    echo 'cd /app/backend' >> /app/start.sh && \
+    echo 'python wait_for_db.py' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Rebuild sponsorship table' >> /app/start.sh && \
+    echo 'echo "Rebuilding sponsorship table..."' >> /app/start.sh && \
+    echo 'python rebuild_sponsorships.py' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
     echo '# Create nginx pid directory' >> /app/start.sh && \
     echo 'mkdir -p /run/nginx' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
@@ -132,8 +142,7 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start backend as app user' >> /app/start.sh && \
     echo 'echo "Starting backend..."' >> /app/start.sh && \
-    echo 'cd /app/backend' >> /app/start.sh && \
-    echo 'su app -c "python run.py"' >> /app/start.sh
+    echo 'su app -c "cd /app/backend && python run.py"' >> /app/start.sh
 
 # Make startup script executable
 RUN chmod +x /app/start.sh

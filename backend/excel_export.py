@@ -139,11 +139,11 @@ class ExcelExporter:
         metadata_data = [
             ["Exported At", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
             ["Total Sponsorships", sponsorship_stats['total_sponsorships']],
-            ["Total Sponsorship Value", f"₹{sponsorship_stats['total_value']:,.2f}"],
+            # ["Total Sponsorship Value", f"₹{sponsorship_stats['total_value']:,.2f}"],
             ["Booked Sponsorships", sponsorship_stats['booked_sponsorships']],
             ["Available Sponsorships", sponsorship_stats['available_sponsorships']],
             ["Total Bookings", sponsorship_stats['total_bookings']],
-            ["Total Max Capacity", sponsorship_stats['total_max_capacity']],
+            # ["Total Max Capacity", sponsorship_stats['total_max_capacity']],
             ["Utilization Rate", f"{sponsorship_stats['utilization_rate']:.1f}%"]
         ]
         

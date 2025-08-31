@@ -6,10 +6,10 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, AlertTriangle, X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { donationsService, CreateDonationData } from "@/services/donations"
+import { donationsService, CreateDonationData, Donation } from "@/services/donations"
 import { sponsorshipsService, Sponsorship } from "@/services/sponsorships"
 import { authService } from "@/services/auth"
 
@@ -41,6 +41,15 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const [loadingQr, setLoadingQr] = useState(false)
   const [sponsorships, setSponsorships] = useState<Sponsorship[]>([])
   const [loadingSponsorships, setLoadingSponsorships] = useState(false)
+  const [showSkippedWarning, setShowSkippedWarning] = useState(false)
+  const [skippedApartmentInfo, setSkippedApartmentInfo] = useState<{
+    tower: number
+    floor: number
+    unit: number
+    notes?: string
+  } | null>(null)
+  const [existingDonation, setExistingDonation] = useState<Donation | null>(null)
+  const [loadingDonation, setLoadingDonation] = useState(false)
 
   // Update currentApartment when preselectedApartment changes
   useEffect(() => {
@@ -58,6 +67,16 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     loadSponsorships()
   }, [])
 
+  // Check apartment status when currentApartment changes
+  useEffect(() => {
+    checkApartmentStatus()
+  }, [currentApartment])
+
+  // Load existing donation data when currentApartment changes
+  useEffect(() => {
+    loadExistingDonation()
+  }, [currentApartment])
+
   // Cleanup QR code URL when component unmounts or QR code changes
   useEffect(() => {
     return () => {
@@ -66,6 +85,80 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       }
     }
   }, [qrCodeUrl])
+
+  const checkApartmentStatus = async () => {
+    try {
+      const donation = await donationsService.getApartmentDonation(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit
+      )
+      
+      if (donation && donation.status === 'skipped') {
+        setSkippedApartmentInfo({
+          tower: currentApartment.tower,
+          floor: currentApartment.floor,
+          unit: currentApartment.unit,
+          notes: donation.notes
+        })
+        setShowSkippedWarning(true)
+      } else {
+        setShowSkippedWarning(false)
+        setSkippedApartmentInfo(null)
+      }
+    } catch (error) {
+      console.error('Failed to check apartment status:', error)
+      // If there's an error, assume apartment is not skipped
+      setShowSkippedWarning(false)
+      setSkippedApartmentInfo(null)
+    }
+  }
+
+  const loadExistingDonation = async () => {
+    setLoadingDonation(true)
+    try {
+      const donation = await donationsService.getApartmentDonation(
+        currentApartment.tower,
+        currentApartment.floor,
+        currentApartment.unit
+      )
+      
+      if (donation && donation.status === 'completed') {
+        setExistingDonation(donation)
+        // Prefill form with existing donation data
+        setFormData({
+          donorName: donation.donor_name || "",
+          amount: donation.amount.toString() || "",
+          phoneNumber: donation.phone_number || "",
+          headCount: donation.head_count?.toString() || "",
+          paymentMethod: (donation.payment_method as "cash" | "upi-self" | "upi-other") || "cash",
+          upiOtherPerson: donation.upi_other_person || "",
+          sponsorship: donation.sponsorship || "",
+          sponsorshipId: donation.sponsorship_id?.toString() || "",
+          notes: donation.notes || "",
+        })
+      } else {
+        setExistingDonation(null)
+        // Reset form to empty state
+        setFormData({
+          donorName: "",
+          amount: "",
+          phoneNumber: "",
+          headCount: "",
+          paymentMethod: "cash",
+          upiOtherPerson: "",
+          sponsorship: "",
+          sponsorshipId: "",
+          notes: "",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to load existing donation:', error)
+      setExistingDonation(null)
+    } finally {
+      setLoadingDonation(false)
+    }
+  }
 
   const loadSponsorships = async () => {
     setLoadingSponsorships(true)
@@ -182,10 +275,10 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsTransitioning(true)
-    setTransitionMessage("Recording donation...")
+    setTransitionMessage(existingDonation ? "Updating donation..." : "Recording donation...")
 
     try {
-      const amount = parseFloat(formData.amount)
+      const amount = parseInt(formData.amount)
       if (isNaN(amount) || amount <= 0) {
         throw new Error("Please enter a valid amount")
       }
@@ -193,7 +286,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       // Validate sponsorship amount if sponsorship is selected
       if (formData.sponsorship && formData.sponsorshipId) {
         const selectedSponsorship = sponsorships.find(s => s.id.toString() === formData.sponsorshipId)
-        if (selectedSponsorship && amount < parseFloat(selectedSponsorship.amount)) {
+        if (selectedSponsorship && amount < Number(selectedSponsorship.amount)) {
           throw new Error(`Donation amount (₹${amount}) must be greater than or equal to the sponsorship amount (₹${selectedSponsorship.amount})`)
         }
       }
@@ -213,7 +306,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         notes: formData.notes.trim() || undefined,
       }
 
-      await donationsService.createDonation(donationData)
+      if (existingDonation) {
+        await donationsService.updateDonation(existingDonation.id, donationData)
+      } else {
+        await donationsService.createDonation(donationData)
+      }
       
       // Reset form
       setFormData({
@@ -235,8 +332,9 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         onDonationCreated()
       }
     } catch (error) {
-      console.error("Error creating donation:", error)
-      alert("Failed to create donation. Please try again.")
+      console.error("Error creating/updating donation:", error)
+      const action = existingDonation ? "updating" : "creating"
+      alert(`Failed to ${action} donation. Please try again.`)
     }
     setIsTransitioning(false)
     setTransitionMessage("")
@@ -283,7 +381,20 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => {
+      const newFormData = { ...prev, [field]: value }
+      
+      // Clear sponsorship data if amount is less than 501
+      if (field === 'amount') {
+        const amount = parseInt(value) || 0
+        if (amount < 501) {
+          newFormData.sponsorship = ""
+          newFormData.sponsorshipId = ""
+        }
+      }
+      
+      return newFormData
+    })
   }
 
   const handleQrPopupClose = () => {
@@ -303,8 +414,6 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const handleQrPopupDoubleClick = () => {
     handleQrPopupClose()
   }
-
-  const donationAmount = Number.parseFloat(formData.amount) || 0
 
   const getThemeClasses = () => {
     switch (theme) {
@@ -425,6 +534,37 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         </div>
       )}
 
+      {/* Skipped Apartment Warning */}
+      {showSkippedWarning && skippedApartmentInfo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-40">
+          <div className={`rounded-lg p-6 text-center shadow-xl max-w-sm mx-4 ${getCardClasses()}`}>
+            <div className="flex items-center justify-center mb-4">
+              <AlertTriangle className="h-6 w-6 mr-2 text-red-500" />
+              <span className={`font-semibold text-lg ${getTextClasses()}`}>Apartment Skipped!</span>
+            </div>
+            <p className={`text-sm mb-4 ${getSubtextClasses()}`}>
+              Apartment <span className="font-semibold text-blue-600">{getFlatNumber()}</span> has already been marked as skipped.
+              {skippedApartmentInfo.notes && (
+                <span className="block mt-2 text-xs">
+                  Reason: {skippedApartmentInfo.notes}
+                </span>
+              )}
+            </p>
+            <Button
+              variant="outline"
+              className="mt-2"
+              onClick={() => {
+                setShowSkippedWarning(false)
+                setSkippedApartmentInfo(null)
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Continue Anyway
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto relative z-10">
         <div className={`border-b px-4 py-4 ${getHeaderClasses()}`}>
           <div className="flex items-center justify-between">
@@ -435,8 +575,13 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
             <div className="text-center">
               <div className={`text-2xl font-bold text-blue-600 ${theme === 'ambient' ? 'text-blue-400' : ''}`}>{getFlatNumber()}</div>
               <div className={`text-sm ${getSubtextClasses()}`}>
-                Block {currentApartment.tower} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
+                Block {String.fromCharCode(64 + ((preselectedApartment?.tower || 1)))} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
               </div>
+              {existingDonation && (
+                <div className={`text-xs mt-1 ${theme === 'dark' ? 'text-green-400' : theme === 'ambient' ? 'text-green-300' : 'text-green-600'}`}>
+                  ✓ Existing donation loaded
+                </div>
+              )}
             </div>
 
             <Button variant="ghost" size="sm" onClick={navigateNext} className="p-2">
@@ -448,7 +593,13 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         <div className="p-4">
           <Card className={getCardClasses()}>
             <CardContent className="pt-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {loadingDonation ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <span className={`ml-2 ${getTextClasses()}`}>Loading donation data...</span>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
                   <Input
                     id="amount"
@@ -537,8 +688,8 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   />
                 </div>
 
-                {donationAmount > 500 && (
-                  <div className="space-y-3">
+                <div className="space-y-3">
+                  {parseInt(formData.amount) >= 501 && (
                     <Select
                       value={formData.sponsorship}
                       onValueChange={handleSponsorshipChange}
@@ -568,20 +719,20 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                         )}
                       </SelectContent>
                     </Select>
+                  )}
 
-                    <Textarea
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange("notes", e.target.value)}
-                      placeholder="Notes"
-                      className={`min-h-[80px] ${
-                        theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
-                        theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
-                        'bg-white text-gray-900 placeholder-gray-500'
-                      }`}
-                      disabled={isTransitioning}
-                    />
-                  </div>
-                )}
+                  <Textarea
+                    value={formData.notes}
+                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    placeholder="Notes"
+                    className={`min-h-[80px] ${
+                      theme === 'dark' ? 'bg-gray-700 text-white border-gray-600 placeholder-gray-400' : 
+                      theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm placeholder-white/70' : 
+                      'bg-white text-gray-900 placeholder-gray-500'
+                    }`}
+                    disabled={isTransitioning}
+                  />
+                </div>
 
                 <div className={`border-t pt-6 ${
                   theme === 'dark' ? 'border-gray-700' : 
@@ -621,12 +772,27 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                 </div>
 
                 <div className="flex flex-col gap-3 pt-4">
+                  {existingDonation && (
+                    <div className={`text-sm p-3 rounded-lg mb-2 ${
+                      theme === 'dark' ? 'bg-blue-900/50 text-blue-200 border border-blue-700' : 
+                      theme === 'ambient' ? 'bg-blue-500/20 text-blue-200 border border-blue-400/30' : 
+                      'bg-blue-50 text-blue-800 border border-blue-200'
+                    }`}>
+                      <div className="font-medium mb-1">Existing donation found</div>
+                      <div className="text-xs opacity-80">
+                        Donor: {existingDonation.donor_name} • Amount: ₹{existingDonation.amount}
+                        {existingDonation.created_at && (
+                          <span> • Date: {new Date(existingDonation.created_at).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <Button
                     type="submit"
                     className="h-12 bg-blue-600 hover:bg-blue-700 text-base font-medium"
                     disabled={!formData.donorName || !formData.amount || isTransitioning}
                   >
-                    {isTransitioning ? "Recording..." : "Record Donation"}
+                    {isTransitioning ? "Recording..." : existingDonation ? "Update Donation" : "Record Donation"}
                   </Button>
                   <Button
                     type="button"
@@ -646,6 +812,30 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   >
                     Skip
                   </Button>
+                  {existingDonation && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => {
+                        setExistingDonation(null)
+                        setFormData({
+                          donorName: "",
+                          amount: "",
+                          phoneNumber: "",
+                          headCount: "",
+                          paymentMethod: "cash",
+                          upiOtherPerson: "",
+                          sponsorship: "",
+                          sponsorshipId: "",
+                          notes: "",
+                        })
+                      }}
+                      className="h-12 text-base bg-transparent"
+                      disabled={isTransitioning}
+                    >
+                      Start Fresh
+                    </Button>
+                  )}
                   <Button 
                     type="button" 
                     variant="outline" 
@@ -657,6 +847,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   </Button>
                 </div>
               </form>
+              )}
             </CardContent>
           </Card>
         </div>
