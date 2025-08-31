@@ -14,7 +14,6 @@ interface SelectProps {
 interface SelectTriggerProps {
   children: React.ReactNode
   className?: string
-  disabled?: boolean
 }
 
 interface SelectContentProps {
@@ -77,8 +76,12 @@ export function Select({ value, onValueChange, disabled, children, className }: 
   }
 
   const handleToggle = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    if (e.type === 'touchstart') {
+      e.stopPropagation()
+    } else {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     if (!disabled) {
       setIsOpen(!isOpen)
     }
@@ -164,7 +167,7 @@ export function Select({ value, onValueChange, disabled, children, className }: 
   )
 }
 
-export function SelectTrigger({ children, className, disabled }: SelectTriggerProps) {
+export function SelectTrigger({ children, className }: SelectTriggerProps) {
   return <div className={className}>{children}</div>
 }
 
@@ -190,8 +193,12 @@ export function SelectValue({ placeholder, children }: SelectValueProps) {
 
 export function SelectItem({ value, children, disabled, onSelect, isSelected }: SelectItemProps & { onSelect?: (value: string) => void; isSelected?: boolean }) {
   const handleClick = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+    if (e.type === 'touchstart') {
+      e.stopPropagation()
+    } else {
+      e.preventDefault()
+      e.stopPropagation()
+    }
     if (!disabled && onSelect) {
       onSelect(value)
     }
