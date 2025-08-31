@@ -453,8 +453,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                   <Input
                     id="amount"
                     type="number"
-                    min="0"
-                    step="1"
+                    min="100"
                     value={formData.amount}
                     onChange={(e) => handleInputChange("amount", e.target.value)}
                     required
