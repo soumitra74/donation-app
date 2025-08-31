@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, AlertTriangle, X } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectItem, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { donationsService, CreateDonationData } from "@/services/donations"
 import { sponsorshipsService, Sponsorship } from "@/services/sponsorships"
@@ -33,6 +33,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     tower: preselectedApartment?.tower || 1,
     floor: preselectedApartment?.floor || 1,
     unit: preselectedApartment?.unit || 1,
+    towerName: String.fromCharCode(64 + ((preselectedApartment?.tower || 1))),
   })
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [transitionMessage, setTransitionMessage] = useState("")
@@ -56,6 +57,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         tower: preselectedApartment.tower,
         floor: preselectedApartment.floor,
         unit: preselectedApartment.unit,
+        towerName: String.fromCharCode(64 + preselectedApartment.tower),
       })
     }
   }, [preselectedApartment])
@@ -110,7 +112,9 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   const loadSponsorships = async () => {
     setLoadingSponsorships(true)
     try {
+      console.log('Loading sponsorships...')
       const availableSponsorships = await sponsorshipsService.getAvailableSponsorships()
+      console.log('Sponsorships loaded:', availableSponsorships)
       setSponsorships(availableSponsorships)
     } catch (error) {
       console.error('Failed to load sponsorships:', error)
@@ -176,7 +180,12 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         }
       }
 
-      return { tower, floor, unit }
+      return { 
+        tower, 
+        floor, 
+        unit, 
+        towerName: String.fromCharCode(64 + tower)
+      }
     })
   }
 
@@ -202,7 +211,12 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         }
       }
 
-      return { tower, floor, unit }
+      return { 
+        tower, 
+        floor, 
+        unit, 
+        towerName: String.fromCharCode(64 + tower)
+      }
     })
   }
 
@@ -211,7 +225,9 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   }
 
   const handleSponsorshipChange = (sponsorshipName: string) => {
+    console.log('Sponsorship changed to:', sponsorshipName)
     const selectedSponsorship = sponsorships.find(s => s.name === sponsorshipName)
+    console.log('Selected sponsorship:', selectedSponsorship)
     setFormData(prev => ({
       ...prev,
       sponsorship: sponsorshipName,
@@ -506,7 +522,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
             <div className="text-center">
               <div className={`text-2xl font-bold text-blue-600 ${theme === 'ambient' ? 'text-blue-400' : ''}`}>{getFlatNumber()}</div>
               <div className={`text-sm ${getSubtextClasses()}`}>
-                Block {currentApartment.tower} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
+                Block {currentApartment.towerName} • Floor {currentApartment.floor} • Unit {currentApartment.unit}
               </div>
             </div>
 
@@ -574,19 +590,16 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       value={formData.upiOtherPerson}
                       onValueChange={(value) => handleInputChange("upiOtherPerson", value)}
                       disabled={isTransitioning}
-                    >
-                      <SelectTrigger className={`h-12 ${
+                      className={`${
                         theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
                         theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
                         'bg-white text-gray-900'
-                      }`}>
-                        <SelectValue placeholder="Select UPI person" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Surojeet">Surojeet</SelectItem>
-                        <SelectItem value="Pramit">Pramit</SelectItem>
-                        <SelectItem value="Abhijit Banerjee">Abhijit Banerjee</SelectItem>
-                      </SelectContent>
+                      }`}
+                    >
+                      <SelectValue placeholder="Select UPI person" />
+                      <SelectItem value="Surojeet">Surojeet</SelectItem>
+                      <SelectItem value="Pramit">Pramit</SelectItem>
+                      <SelectItem value="Abhijit Banerjee">Abhijit Banerjee</SelectItem>
                     </Select>
                   )}
                 </div>
@@ -614,30 +627,27 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                       value={formData.sponsorship}
                       onValueChange={handleSponsorshipChange}
                       disabled={isTransitioning}
-                    >
-                      <SelectTrigger className={`h-12 ${
+                      className={`${
                         theme === 'dark' ? 'bg-gray-700 text-white border-gray-600' : 
                         theme === 'ambient' ? 'bg-white/20 text-white border-white/30 backdrop-blur-sm' : 
                         'bg-white text-gray-900'
-                      }`}>
-                        <SelectValue placeholder="Sponsorship" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {loadingSponsorships ? (
-                          <SelectItem value="">Loading sponsorships...</SelectItem>
-                        ) : sponsorships.length === 0 ? (
-                          <SelectItem value="">No sponsorships available</SelectItem>
-                        ) : (
-                          <>
-                            <SelectItem value="">Select a sponsorship</SelectItem>
-                            {sponsorships.map((sponsorship) => (
-                              <SelectItem key={sponsorship.id} value={sponsorship.name}>
-                                {sponsorship.name} (₹{sponsorship.amount})
-                              </SelectItem>
-                            ))}
-                          </>
-                        )}
-                      </SelectContent>
+                      }`}
+                    >
+                      <SelectValue placeholder="Sponsorship" />
+                      {loadingSponsorships ? (
+                        <SelectItem value="">Loading sponsorships...</SelectItem>
+                      ) : sponsorships.length === 0 ? (
+                        <SelectItem value="">No sponsorships available</SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="">Select a sponsorship</SelectItem>
+                          {sponsorships.map((sponsorship) => (
+                            <SelectItem key={sponsorship.id} value={sponsorship.name}>
+                              {sponsorship.name} (₹{sponsorship.amount})
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                     </Select>
 
                     <Textarea
