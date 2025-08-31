@@ -286,7 +286,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
       // Validate sponsorship amount if sponsorship is selected
       if (formData.sponsorship && formData.sponsorshipId) {
         const selectedSponsorship = sponsorships.find(s => s.id.toString() === formData.sponsorshipId)
-        if (selectedSponsorship && amount < parseInt(selectedSponsorship.amount)) {
+        if (selectedSponsorship && amount < Number(selectedSponsorship.amount)) {
           throw new Error(`Donation amount (₹${amount}) must be greater than or equal to the sponsorship amount (₹${selectedSponsorship.amount})`)
         }
       }
@@ -306,7 +306,11 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         notes: formData.notes.trim() || undefined,
       }
 
-      await donationsService.createDonation(donationData)
+      if (existingDonation) {
+        await donationsService.updateDonation(existingDonation.id, donationData)
+      } else {
+        await donationsService.createDonation(donationData)
+      }
       
       // Reset form
       setFormData({
@@ -328,8 +332,9 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         onDonationCreated()
       }
     } catch (error) {
-      console.error("Error creating donation:", error)
-      alert("Failed to create donation. Please try again.")
+      console.error("Error creating/updating donation:", error)
+      const action = existingDonation ? "updating" : "creating"
+      alert(`Failed to ${action} donation. Please try again.`)
     }
     setIsTransitioning(false)
     setTransitionMessage("")

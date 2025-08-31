@@ -71,6 +71,57 @@ def get_donation(donation_id):
     donation = Donation.query.get_or_404(donation_id)
     return jsonify(donation_schema.dump(donation))
 
+@api_bp.route('/donations/<int:donation_id>', methods=['PUT'])
+@require_auth
+def update_donation(donation_id):
+    """Update a specific donation"""
+    donation = Donation.query.get_or_404(donation_id)
+    data = request.get_json()
+    
+    try:
+        # Handle sponsorship changes
+        # If donation had a different sponsorship, decrement its booked count
+        if donation.sponsorship_id:
+            if donation.sponsorship_id != data.get('sponsorship_id'):
+                prev_sponsorship = Sponsorship.query.get(donation.sponsorship_id)
+                if prev_sponsorship:
+                    prev_sponsorship.booked = max(0, prev_sponsorship.booked - 1)
+                    prev_sponsorship.is_closed = False
+                    db.session.add(prev_sponsorship)
+            else: # donation.sponsorship_id == data.get('sponsorship_id'):
+                pass
+
+        # Handle new sponsorship booking if sponsorship_id is provided
+        sponsorship_id = data.get('sponsorship_id')
+        if sponsorship_id:
+            sponsorship = Sponsorship.query.get(sponsorship_id)
+            if not sponsorship:
+                return jsonify({'error': 'Sponsorship not found'}), 404
+            
+            if sponsorship.is_closed:
+                return jsonify({'error': 'Sponsorship is already closed'}), 400
+            
+            # Increment booked count
+            sponsorship.booked += 1
+            
+            # Check if sponsorship is now fully booked
+            if sponsorship.booked >= sponsorship.max_count:
+                sponsorship.is_closed = True
+            
+            # Add the modified sponsorship back to the session
+            db.session.add(sponsorship)
+        else:
+            # If sponsorship_id is not provided, set it to None
+            donation.sponsorship_id = None
+        
+        # Update the donation
+        donation = donation_schema.load(data, instance=donation, session=db.session, partial=True)
+        db.session.commit()
+        return jsonify(donation_schema.dump(donation))
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
 @api_bp.route('/donations', methods=['POST'])
 @require_auth
 def create_donation():

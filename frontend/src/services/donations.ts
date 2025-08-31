@@ -109,6 +109,15 @@ class DonationsService {
     })
   }
 
+  // Update an existing donation
+  async updateDonation(donationId: number, donationData: CreateDonationData): Promise<Donation> {
+    const endpoint = `/donations/${donationId}`
+    return await this.makeRequest(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(donationData),
+    })
+  }
+
   // Get donation for a specific apartment
   async getApartmentDonation(tower: number, floor: number, unit: number): Promise<Donation | null> {
     try {
