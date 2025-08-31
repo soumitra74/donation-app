@@ -69,17 +69,17 @@ def debug_user_login():
             # Test password hashing
             print("Testing password hashing:")
             test_hash = auth_service.hash_password(password)
-            print(f"   New hash for '{password}': {test_hash.decode('utf-8')[:20]}...")
+            print(f"   New hash for '{password}': {test_hash[:20]}...")
             
             # Verify the new hash
-            test_verify = auth_service.verify_password(password, test_hash.decode('utf-8'))
+            test_verify = auth_service.verify_password(password, test_hash)
             print(f"   Verification of new hash: {'✅ Valid' if test_verify else '❌ Invalid'}")
             
             # Compare with stored hash
             if user.password_hash:
                 print(f"   Stored hash: {user.password_hash[:20]}...")
-                print(f"   New hash:   {test_hash.decode('utf-8')[:20]}...")
-                print(f"   Hashes match: {'✅ Yes' if user.password_hash == test_hash.decode('utf-8') else '❌ No'}")
+                print(f"   New hash:   {test_hash[:20]}...")
+                print(f"   Hashes match: {'✅ Yes' if user.password_hash == test_hash else '❌ No'}")
             
         except Exception as e:
             print(f"❌ Error debugging user: {e}")

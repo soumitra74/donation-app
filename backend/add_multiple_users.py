@@ -20,10 +20,10 @@ def add_multiple_users():
     # User data: email, name, assigned_towers
     users_data = [
         ("abhijit.banerjee5@gmail.com", "Abhijit Banerjee", [7, 8]),  # G and H
-        ("bandpramit@gmail.com", "Pramit Band", [1, 2, 10]),  # A, B and J
+        ("bandpramit@gmail.com", "Pramit Bandyopadhyay", [1, 2, 10]),  # A, B and J
         ("abhijit.ray.chaudhury@gmail.com", "Abhijit Ray Chaudhury", [7, 8]),  # G and H
-        ("indranil.cse@gmail.com", "Indranil CSE", [8]),  # H
-        ("paulsanjib@hotmail.com", "Paul Sanjib", [3, 4]),  # C and D
+        ("indranil.cse@gmail.com", "Indranil Biswas", [8]),  # H
+        ("paulsanjib@hotmail.com", "Sanjib Paul", [3, 4]),  # C and D
         ("subhra.roy@gmail.com", "Subhra Roy", [1, 2]),  # A and B
         ("sibnath_ghosh@yahoo.com", "Sibnath Ghosh", [1, 10]),  # A and J
         ("sumantamallick.ssr@gmail.com", "Sumanta Mallick", [4, 5, 6, 7]),  # D, E, F and G
