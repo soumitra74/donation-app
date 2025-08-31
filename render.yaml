@@ -19,7 +19,7 @@ services:
       - key: FLASK_ENV
         value: production
       - key: VITE_API_URL
-        value: https://donation-app.onrender.com/api/v1
+        value: https://donation-app-1wvv.onrender.com/api/v1
     buildFilter:
       paths:
         - backend/**
