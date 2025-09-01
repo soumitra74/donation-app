@@ -42,12 +42,16 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
   // Remove duplicates and sort
   const uniqueAssignedTowers = [...new Set(assignedTowers)].sort((a, b) => a - b)
 
+  // Check if user is admin
+  const isAdmin = roles.some(role => role.role === 'admin')
+
   useEffect(() => {
     const loadDonations = async () => {
       try {
         setLoading(true)
         const [donationsData, statsData] = await Promise.all([
-          donationsService.getMyDonations(parseInt(user.id)),
+          // If admin, get all donations, otherwise get user's donations
+          isAdmin ? donationsService.getDonations() : donationsService.getMyDonations(parseInt(user.id)),
           donationsService.getStats()
         ])
         setDonations(donationsData)
@@ -65,7 +69,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
     }
 
     loadDonations()
-  }, [user.id])
+  }, [user.id, isAdmin])
 
   const getApartmentStatus = (tower: number, floor: number, unit: number) => {
     const donation = donations.find((d) => d.tower === tower && d.floor === floor && d.unit === unit)
@@ -88,7 +92,8 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
     try {
       setLoading(true)
       const [donationsData, statsData] = await Promise.all([
-        donationsService.getMyDonations(parseInt(user.id)),
+        // If admin, get all donations, otherwise get user's donations
+        isAdmin ? donationsService.getDonations() : donationsService.getMyDonations(parseInt(user.id)),
         donationsService.getStats()
       ])
       setDonations(donationsData)
@@ -145,6 +150,58 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
     }
   }
 
+  // Render legend component
+  const renderLegend = () => (
+    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 bg-green-100 border border-green-300 rounded"></div>
+        <span className={`text-xs ${
+          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
+          Donated
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 bg-orange-100 border border-orange-300 rounded"></div>
+        <span className={`text-xs ${
+          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
+          Follow-up
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 bg-slate-200 border border-slate-400 rounded"></div>
+        <span className={`text-xs ${
+          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
+          Skip
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
+        <span className={`text-xs ${
+          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
+          Visited
+        </span>
+      </div>
+      <div className="flex items-center gap-1">
+        <div className={`w-3 h-3 rounded ${
+          theme === 'ambient' 
+            ? 'bg-white/10 border border-white/20' 
+            : theme === 'dark'
+            ? 'bg-gray-700 border border-gray-600'
+            : 'bg-gray-100 border border-gray-200'
+        }`}></div>
+        <span className={`text-xs ${
+          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
+          Not Visited
+        </span>
+      </div>
+    </div>
+  )
+
   if (showForm) {
     return <DonationForm
       onCancel={() => {
@@ -179,8 +236,6 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
         </>
       )}
 
-
-
       {/* Header - Hidden on mobile */}
       <header className={`shadow-sm border-b hidden sm:block relative z-10 ${
         theme === 'ambient' 
@@ -195,7 +250,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <h1 className={`text-xl font-semibold ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Donation Dashboard
+                Donation Dashboard {isAdmin && '(Admin View)'}
               </h1>
               <p className={`text-sm ${
                 theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -242,7 +297,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <h1 className={`text-lg font-semibold ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Dashboard
+                Dashboard {isAdmin && '(Admin)'}
               </h1>
               <p className={`text-xs ${
                 theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
@@ -358,32 +413,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
                   }).flat()}
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-1 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-100 border border-green-300 rounded"></div>
-                    <span className={`text-xs ${
-                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Donated
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-slate-100 border border-slate-300 rounded"></div>
-                    <span className={`text-xs ${
-                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Follow-up
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-slate-200 border border-slate-400 rounded"></div>
-                    <span className={`text-xs ${
-                      theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Skip
-                    </span>
-                  </div>
-                </div>
+                {renderLegend()}
               </CardContent>
             </Card>
           ))}
@@ -509,32 +539,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
                           }).flat()}
                         </div>
 
-                        <div className="mt-3 flex flex-wrap gap-1 text-xs">
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-100 border border-green-300 rounded"></div>
-                            <span className={`text-xs ${
-                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              Donated
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-orange-100 border border-orange-300 rounded"></div>
-                            <span className={`text-xs ${
-                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              Follow-up
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-slate-200 border border-slate-400 rounded"></div>
-                            <span className={`text-xs ${
-                              theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                            }`}>
-                              Skip
-                            </span>
-                          </div>
-                        </div>
+                        {renderLegend()}
                       </CardContent>
                     </Card>
                   </div>
@@ -606,7 +611,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <CardTitle className={`text-sm font-medium ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Donations
+                {isAdmin ? 'Total Donations' : 'My Donations'}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -622,7 +627,7 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
               <p className={`text-xs ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
-                Collected by you
+                {isAdmin ? 'All donations' : 'Collected by you'}
               </p>
             </CardContent>
           </Card>
@@ -689,12 +694,12 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
                 <CardTitle className={
                   theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }>
-                  Recent Donations
+                  {isAdmin ? 'All Recent Donations' : 'Recent Donations'}
                 </CardTitle>
                 <CardDescription className={
                   theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                 }>
-                  Your latest donation records
+                  {isAdmin ? 'Latest donation records from all volunteers' : 'Your latest donation records'}
                 </CardDescription>
               </div>
               <Button
@@ -745,6 +750,11 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
                           <Badge variant="secondary">
                             {getApartmentNumber(donation.tower, donation.floor, donation.unit)}
                           </Badge>
+                          {isAdmin && donation.volunteer_name && (
+                            <Badge variant="outline" className="text-xs">
+                              by {donation.volunteer_name}
+                            </Badge>
+                          )}
                         </div>
                         <p className={`text-sm ${
                           theme === 'ambient' ? 'text-white/70' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
