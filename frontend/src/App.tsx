@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react'
 import { LoginForm } from './components/login-form'
 import { DonationDashboard } from './components/donation-dashboard'
 import { UserManagement } from './components/user-management'
+import { SponsorshipManagement } from './components/sponsorship-management'
 import { authService, User, UserRole } from './services/auth'
 import { donationsService } from './services/donations'
+import { sponsorshipsService } from './services/sponsorships'
 import { ThemeProvider, useTheme } from './components/theme-provider'
 import './App.css'
 
@@ -15,7 +17,7 @@ interface AuthenticatedUser {
 function AppContent() {
   const [authenticatedUser, setAuthenticatedUser] = useState<AuthenticatedUser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [currentView, setCurrentView] = useState<'dashboard' | 'user-management'>('dashboard')
+  const [currentView, setCurrentView] = useState<'dashboard' | 'user-management' | 'sponsorship-management'>('dashboard')
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -30,6 +32,7 @@ function AppContent() {
           const token = authService.getToken()
           if (token) {
             donationsService.updateToken(token)
+            sponsorshipsService.updateToken(token)
           }
         }
       } catch (error) {
@@ -52,15 +55,17 @@ function AppContent() {
     const token = authService.getToken()
     if (token) {
       donationsService.updateToken(token)
+      sponsorshipsService.updateToken(token)
     }
   }
 
   const handleLogout = () => {
     setAuthenticatedUser(null)
-    setCurrentView('dashboard')
+        setCurrentView('dashboard')
     authService.logout()
     // Clear token from donations service
     donationsService.clearToken()
+    sponsorshipsService.clearToken()
   }
 
   const handleBackToDashboard = () => {
@@ -69,6 +74,10 @@ function AppContent() {
 
   const handleNavigateToUserManagement = () => {
     setCurrentView('user-management')
+  }
+
+  const handleNavigateToSponsorshipManagement = () => {
+    setCurrentView('sponsorship-management')
   }
 
 
@@ -99,6 +108,18 @@ function AppContent() {
     )
   }
 
+  if (currentView === 'sponsorship-management') {
+    return (
+      <SponsorshipManagement 
+        user={authenticatedUser.user} 
+        roles={authenticatedUser.roles}
+        onLogout={handleLogout}
+        onBack={handleBackToDashboard}
+        theme={theme} 
+      />
+    )
+  }
+
   // Show dashboard if user is authenticated
   return (
     <DonationDashboard 
@@ -106,6 +127,7 @@ function AppContent() {
       roles={authenticatedUser.roles}
       onLogout={handleLogout}
       onNavigateToUserManagement={handleNavigateToUserManagement}
+      onNavigateToSponsorshipManagement={handleNavigateToSponsorshipManagement}
       theme={theme} 
     />
   )

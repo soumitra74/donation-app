@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
 import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon } from "lucide-react"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
 import { donationsService, Donation, DonationStats } from "@/services/donations"
 
@@ -16,10 +16,11 @@ interface DonationDashboardProps {
   roles: UserRole[]
   onLogout: () => void
   onNavigateToUserManagement?: () => void
+  onNavigateToSponsorshipManagement?: () => void
   theme: 'light' | 'dark' | 'ambient'
 }
 
-export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManagement, theme }: DonationDashboardProps) {
+export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManagement, onNavigateToSponsorshipManagement, theme }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [stats, setStats] = useState<DonationStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -798,6 +799,13 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                 >
                   <UserIcon className="h-4 w-4 mr-2" />
                   User Management
+                </Button>
+                <Button 
+                  onClick={onNavigateToSponsorshipManagement}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Gift className="h-4 w-4 mr-2" />
+                  Sponsorship Management
                 </Button>
               </div>
             </CardContent>
