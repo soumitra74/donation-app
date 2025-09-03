@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { LoginForm } from './components/login-form'
 import { DonationDashboard } from './components/donation-dashboard'
+import { UserManagement } from './components/user-management'
 import { authService, User, UserRole } from './services/auth'
 import { donationsService } from './services/donations'
 import { ThemeProvider, useTheme } from './components/theme-provider'
@@ -14,6 +15,7 @@ interface AuthenticatedUser {
 function AppContent() {
   const [authenticatedUser, setAuthenticatedUser] = useState<AuthenticatedUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const [currentView, setCurrentView] = useState<'dashboard' | 'user-management'>('dashboard')
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -55,9 +57,18 @@ function AppContent() {
 
   const handleLogout = () => {
     setAuthenticatedUser(null)
+    setCurrentView('dashboard')
     authService.logout()
     // Clear token from donations service
     donationsService.clearToken()
+  }
+
+  const handleBackToDashboard = () => {
+    setCurrentView('dashboard')
+  }
+
+  const handleNavigateToUserManagement = () => {
+    setCurrentView('user-management')
   }
 
 
@@ -75,12 +86,26 @@ function AppContent() {
     return <LoginForm onLogin={handleLogin} theme={theme} />
   }
 
+  // Show appropriate view if user is authenticated
+  if (currentView === 'user-management') {
+    return (
+      <UserManagement 
+        user={authenticatedUser.user} 
+        roles={authenticatedUser.roles}
+        onLogout={handleLogout}
+        onBack={handleBackToDashboard}
+        theme={theme} 
+      />
+    )
+  }
+
   // Show dashboard if user is authenticated
   return (
     <DonationDashboard 
       user={authenticatedUser.user} 
       roles={authenticatedUser.roles}
-      onLogout={handleLogout} 
+      onLogout={handleLogout}
+      onNavigateToUserManagement={handleNavigateToUserManagement}
       theme={theme} 
     />
   )

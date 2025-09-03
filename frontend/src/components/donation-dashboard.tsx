@@ -15,10 +15,11 @@ interface DonationDashboardProps {
   user: User
   roles: UserRole[]
   onLogout: () => void
+  onNavigateToUserManagement?: () => void
   theme: 'light' | 'dark' | 'ambient'
 }
 
-export function DonationDashboard({ user, roles, onLogout, theme }: DonationDashboardProps) {
+export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManagement, theme }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [stats, setStats] = useState<DonationStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -777,6 +778,31 @@ export function DonationDashboard({ user, roles, onLogout, theme }: DonationDash
             )}
           </CardContent>
         </Card>
+
+        {/* Admin Actions */}
+        {isAdmin && (
+          <Card className={`mt-6 ${theme === 'ambient' ? 'bg-white/10 backdrop-blur-md border-white/20' : theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <CardHeader>
+              <CardTitle className={`${theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                Admin Actions
+              </CardTitle>
+              <CardDescription className={`${theme === 'ambient' ? 'text-white/70' : theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                Manage users and system settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-4">
+                <Button 
+                  onClick={onNavigateToUserManagement}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  User Management
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Logout Button at Bottom */}
         <div className="mt-8 mb-6 text-center">

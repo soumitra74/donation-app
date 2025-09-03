@@ -336,3 +336,120 @@ def get_users():
     """Get all users (admin only)"""
     users = User.query.all()
     return jsonify([user_schema.dump(user) for user in users]), 200
+
+@auth_bp.route('/users', methods=['POST'])
+@require_auth
+@require_role('admin')
+def create_user():
+    """Create a new user (admin only)"""
+    data = request.get_json()
+    
+    try:
+        # Check if user already exists
+        existing_user = User.query.filter_by(email=data['email']).first()
+        if existing_user:
+            return jsonify({'error': 'User with this email already exists'}), 400
+        
+        # Create new user
+        password_hash = auth_service.hash_password(data['password'])
+        
+        user = User(
+            email=data['email'],
+            name=data['name'],
+            password_hash=password_hash
+        )
+        
+        db.session.add(user)
+        db.session.flush()  # Get user ID
+        
+        # Create user role
+        user_role = UserRole(
+            user_id=user.id,
+            role=data['role'],
+            assigned_towers=json.dumps(data.get('assigned_towers', []))
+        )
+        
+        db.session.add(user_role)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'User created successfully',
+            'user': user_schema.dump(user)
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@auth_bp.route('/users/<int:user_id>', methods=['PUT'])
+@require_auth
+@require_role('admin')
+def update_user(user_id):
+    """Update a user (admin only)"""
+    data = request.get_json()
+    
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Check if email is being changed and if it already exists
+        if data['email'] != user.email:
+            existing_user = User.query.filter_by(email=data['email']).first()
+            if existing_user:
+                return jsonify({'error': 'User with this email already exists'}), 400
+        
+        # Update user
+        user.email = data['email']
+        user.name = data['name']
+        
+        # Update user role
+        user_role = UserRole.query.filter_by(user_id=user.id).first()
+        if user_role:
+            user_role.role = data['role']
+            user_role.assigned_towers = json.dumps(data.get('assigned_towers', []))
+        else:
+            # Create new role if none exists
+            user_role = UserRole(
+                user_id=user.id,
+                role=data['role'],
+                assigned_towers=json.dumps(data.get('assigned_towers', []))
+            )
+            db.session.add(user_role)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'User updated successfully',
+            'user': user_schema.dump(user)
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@auth_bp.route('/users/<int:user_id>', methods=['DELETE'])
+@require_auth
+@require_role('admin')
+def delete_user(user_id):
+    """Delete a user (admin only)"""
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Don't allow admin to delete themselves
+        if user.id == request.user_id:
+            return jsonify({'error': 'Cannot delete your own account'}), 400
+        
+        # Delete user (cascade will handle user_roles)
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'User deleted successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400

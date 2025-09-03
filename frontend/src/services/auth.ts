@@ -145,7 +145,39 @@ class AuthService {
   }
 
   async getUsers(): Promise<User[]> {
-    return await this.makeRequest('/auth/users')
+    const users = await this.makeRequest('/auth/users')
+    return users
+  }
+
+  async createUser(userData: {
+    email: string
+    name: string
+    password: string
+    role: string
+    assigned_towers: number[]
+  }): Promise<{ message: string; user: User }> {
+    return await this.makeRequest('/auth/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async updateUser(userId: string, userData: {
+    email: string
+    name: string
+    role: string
+    assigned_towers: number[]
+  }): Promise<{ message: string; user: User }> {
+    return await this.makeRequest(`/auth/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async deleteUser(userId: string): Promise<{ message: string }> {
+    return await this.makeRequest(`/auth/users/${userId}`, {
+      method: 'DELETE',
+    })
   }
 
   async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
