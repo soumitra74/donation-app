@@ -561,6 +561,18 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
               <X className="h-4 w-4 mr-1" />
               Continue Anyway
             </Button>
+            <Button
+              variant="outline"
+              className="mt-2 w-full"
+              onClick={() => {
+                setShowSkippedWarning(false)
+                setSkippedApartmentInfo(null)
+                handleSkip()
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Skip Apartment
+            </Button>
           </div>
         </div>
       )}

@@ -124,6 +124,16 @@ class SponsorshipsService {
     const sponsorships = await this.getSponsorships()
     return sponsorships.filter(sponsorship => !sponsorship.is_closed)
   }
+
+  // Update token (for syncing with auth service)
+  updateToken(token: string) {
+    this.token = token
+  }
+
+  // Clear token
+  clearToken() {
+    this.token = null
+  }
 }
 
 // Export a singleton instance
