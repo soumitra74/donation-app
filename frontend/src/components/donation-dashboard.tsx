@@ -835,81 +835,22 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                   {isAdmin ? 'Donation records from all volunteers' : 'Your donation records'}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className={
-                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }>Per page:</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => setPageSize(parseInt(e.target.value))}
-                    className={`${
-                      theme === 'ambient'
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700'
-                    } rounded-md border px-2 py-1`}
-                  >
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className={`${
-                      theme === 'ambient' 
-                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                        : theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Prev
-                  </Button>
-                  <span className={
-                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }>
-                    {currentPage} / {recentTotalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(recentTotalPages, p + 1))}
-                    disabled={currentPage >= recentTotalPages}
-                    className={`${
-                      theme === 'ambient' 
-                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                        : theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Next
-                  </Button>
-                </div>
-                <Button
-                  onClick={handleExportExcel}
-                  disabled={exporting}
-                  variant="outline"
-                  size="sm"
-                  className={`${
-                    theme === 'ambient' 
-                      ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                      : theme === 'dark'
-                      ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {exporting ? 'Exporting...' : 'Export Excel'}
-                </Button>
-              </div>
+              <Button
+                onClick={handleExportExcel}
+                disabled={exporting}
+                variant="outline"
+                size="sm"
+                className={`${
+                  theme === 'ambient'
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exporting ? 'Exporting...' : 'Export Excel'}
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -985,6 +926,69 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                   ))}
               </div>
             )}
+
+            {/* Pagination Controls */}
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={
+                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }>Per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(parseInt(e.target.value))}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    } rounded-md border px-2 py-1`}
+                  >
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Prev
+                  </Button>
+                  <span className={
+                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }>
+                    {currentPage} / {recentTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(recentTotalPages, p + 1))}
+                    disabled={currentPage >= recentTotalPages}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
