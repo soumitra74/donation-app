@@ -347,7 +347,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         currentApartment.tower,
         currentApartment.floor,
         currentApartment.unit,
-        "Skipped by user"
+        formData.notes.trim()
       )
       
       navigateNext()
@@ -367,7 +367,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
         currentApartment.tower,
         currentApartment.floor,
         currentApartment.unit,
-        "Marked for follow-up"
+        formData.notes.trim()
       )
       
       navigateNext()
