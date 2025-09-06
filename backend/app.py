@@ -3,10 +3,14 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import os
+import sys
+import logging
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+"""Application factory and logging configuration."""
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -19,6 +23,17 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # JWT Configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
 app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID', '')
+
+# Configure logging to stdout so platforms like Render capture app logs
+log_level_name = os.getenv('LOG_LEVEL', 'INFO').upper()
+log_level = getattr(logging, log_level_name, logging.INFO)
+logging.basicConfig(
+    level=log_level,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+app.logger.setLevel(log_level)
+app.logger.info("Flask application initialized with log level %s", log_level_name)
 
 # Initialize extensions
 db = SQLAlchemy(app)

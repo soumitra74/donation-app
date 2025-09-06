@@ -32,6 +32,12 @@ export interface DonationStats {
   skipped: number
 }
 
+export interface TodayStats {
+  total_donations: number
+  total_amount: number
+  average_donation: number
+}
+
 export interface CreateDonationData {
   donor_name: string
   amount: number  // Integer amount in rupees
@@ -217,6 +223,11 @@ class DonationsService {
   // Get donation statistics
   async getStats(): Promise<DonationStats> {
     return await this.makeRequest('/stats')
+  }
+
+  // Get today's donation statistics
+  async getTodayStats(): Promise<TodayStats> {
+    return await this.makeRequest('/stats/today')
   }
 
   // Get donations by user (current user's donations)

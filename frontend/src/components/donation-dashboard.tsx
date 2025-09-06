@@ -9,7 +9,7 @@ import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift, X as XIcon } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
-import { donationsService, Donation, DonationStats } from "@/services/donations"
+import { donationsService, Donation, DonationStats, TodayStats } from "@/services/donations"
 
 interface DonationDashboardProps {
   user: User
@@ -23,6 +23,7 @@ interface DonationDashboardProps {
 export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManagement, onNavigateToSponsorshipManagement, theme }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [stats, setStats] = useState<DonationStats | null>(null)
+  const [todayStats, setTodayStats] = useState<TodayStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedApartment, setSelectedApartment] = useState<{ tower: number; floor: number; unit: number } | null>(
@@ -36,6 +37,7 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
   const [recentDonations, setRecentDonations] = useState<Donation[]>([])
   const [recentTotalCount, setRecentTotalCount] = useState(0)
   const [recentLoading, setRecentLoading] = useState(false)
+
 
   // Get assigned towers from user roles
   const assignedTowers = roles.reduce((towers: number[], role) => {
@@ -56,13 +58,15 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
     const loadDonations = async () => {
       try {
         setLoading(true)
-        const [donationsData, statsData] = await Promise.all([
+        const [donationsData, statsData, todayStatsData] = await Promise.all([
           // If admin, get all donations, otherwise get user's donations
           isAdmin ? donationsService.getDonations() : donationsService.getMyDonations(parseInt(user.id)),
-          donationsService.getStats()
+          donationsService.getStats(),
+          donationsService.getTodayStats()
         ])
         setDonations(donationsData)
         setStats(statsData)
+        setTodayStats(todayStatsData)
         setCurrentPage(1)
       } catch (error) {
         console.error('Failed to load donations:', error)
@@ -120,13 +124,15 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
   const refreshDonations = async () => {
     try {
       setLoading(true)
-      const [donationsData, statsData] = await Promise.all([
+      const [donationsData, statsData, todayStatsData] = await Promise.all([
         // If admin, get all donations, otherwise get user's donations
         isAdmin ? donationsService.getDonations() : donationsService.getMyDonations(parseInt(user.id)),
-        donationsService.getStats()
+        donationsService.getStats(),
+        donationsService.getTodayStats()
       ])
       setDonations(donationsData)
       setStats(statsData)
+      setTodayStats(todayStatsData)
     } catch (error) {
       console.error('Failed to refresh donations:', error)
     } finally {
@@ -588,10 +594,11 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           </div>
         </div>
 
+        {/* Today's Collections */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className={`${
-            theme === 'ambient' 
-              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
               : theme === 'dark'
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white'
@@ -600,7 +607,109 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
               <CardTitle className={`text-sm font-medium ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Total Collected
+                Today's Collection
+              </CardTitle>
+              <TrendingUp className={`h-4 w-4 ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-24 rounded"></div>
+                ) : (
+                  `₹${todayStats ? todayStats.total_amount.toLocaleString() : 0}`
+                )}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                From {todayStats ? todayStats.total_donations : 0} donations today
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className={`${
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Today's Donations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
+                ) : (
+                  todayStats ? todayStats.total_donations : 0
+                )}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Collected today
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className={`${
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Today's Average
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                ) : (
+                  `₹${todayStats ? Math.round(todayStats.average_donation) : 0}`
+                )}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Per donation today
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Overall Collections */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className={`${
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Total Collection
               </CardTitle>
               <TrendingUp className={`h-4 w-4 ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -625,8 +734,8 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           </Card>
 
           <Card className={`${
-            theme === 'ambient' 
-              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
               : theme === 'dark'
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white'
@@ -657,8 +766,8 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           </Card>
 
           <Card className={`${
-            theme === 'ambient' 
-              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
               : theme === 'dark'
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white'
@@ -726,81 +835,22 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                   {isAdmin ? 'Donation records from all volunteers' : 'Your donation records'}
                 </CardDescription>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className={
-                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }>Per page:</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => setPageSize(parseInt(e.target.value))}
-                    className={`${
-                      theme === 'ambient'
-                        ? 'bg-white/10 border-white/20 text-white'
-                        : theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white'
-                        : 'bg-white border-gray-300 text-gray-700'
-                    } rounded-md border px-2 py-1`}
-                  >
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className={`${
-                      theme === 'ambient' 
-                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                        : theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Prev
-                  </Button>
-                  <span className={
-                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }>
-                    {currentPage} / {recentTotalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage((p) => Math.min(recentTotalPages, p + 1))}
-                    disabled={currentPage >= recentTotalPages}
-                    className={`${
-                      theme === 'ambient' 
-                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                        : theme === 'dark'
-                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Next
-                  </Button>
-                </div>
-                <Button
-                  onClick={handleExportExcel}
-                  disabled={exporting}
-                  variant="outline"
-                  size="sm"
-                  className={`${
-                    theme === 'ambient' 
-                      ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                      : theme === 'dark'
-                      ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {exporting ? 'Exporting...' : 'Export Excel'}
-                </Button>
-              </div>
+              <Button
+                onClick={handleExportExcel}
+                disabled={exporting}
+                variant="outline"
+                size="sm"
+                className={`${
+                  theme === 'ambient'
+                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                    : theme === 'dark'
+                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exporting ? 'Exporting...' : 'Export Excel'}
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -876,6 +926,69 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                   ))}
               </div>
             )}
+
+            {/* Pagination Controls */}
+            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={
+                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }>Per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(parseInt(e.target.value))}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    } rounded-md border px-2 py-1`}
+                  >
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Prev
+                  </Button>
+                  <span className={
+                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }>
+                    {currentPage} / {recentTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(recentTotalPages, p + 1))}
+                    disabled={currentPage >= recentTotalPages}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

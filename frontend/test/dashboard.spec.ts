@@ -13,7 +13,14 @@ test.describe('Dashboard', () => {
   test('should display dashboard elements', async ({ page }) => {
     await expect(page.locator('text=Dashboard')).toBeVisible();
     await expect(page.locator('text=Welcome back, System Administrator')).toBeVisible();
-    await expect(page.locator('text=Total Collected')).toBeVisible();
+
+    // Today's statistics cards
+    await expect(page.locator('text=Today\'s Collection')).toBeVisible();
+    await expect(page.locator('text=Today\'s Donations')).toBeVisible();
+    await expect(page.locator('text=Today\'s Average')).toBeVisible();
+
+    // Overall statistics cards
+    await expect(page.locator('text=Total Collection')).toBeVisible();
     await expect(page.locator('text=Donations Count')).toBeVisible();
     await expect(page.locator('text=Average Donation')).toBeVisible();
   });
