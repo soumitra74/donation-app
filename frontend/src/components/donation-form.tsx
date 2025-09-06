@@ -62,9 +62,19 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     }
   }, [preselectedApartment])
 
-  // Load sponsorships on component mount
+  // Load sponsorships on component mount using cached data and subscribe to updates
   useEffect(() => {
-    loadSponsorships()
+    setSponsorships(sponsorshipsService.getCachedAvailableSponsorships())
+    const unsubscribe = sponsorshipsService.subscribe((all) => {
+      setSponsorships(all.filter(s => !s.is_closed))
+    })
+    if (sponsorshipsService.getCachedSponsorships().length === 0) {
+      setLoadingSponsorships(true)
+      sponsorshipsService.preloadSponsorships()
+        .catch((error) => console.error('Failed to preload sponsorships:', error))
+        .finally(() => setLoadingSponsorships(false))
+    }
+    return () => unsubscribe()
   }, [])
 
   // Check apartment status when currentApartment changes
@@ -160,17 +170,7 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
     }
   }
 
-  const loadSponsorships = async () => {
-    setLoadingSponsorships(true)
-    try {
-      const availableSponsorships = await sponsorshipsService.getAvailableSponsorships()
-      setSponsorships(availableSponsorships)
-    } catch (error) {
-      console.error('Failed to load sponsorships:', error)
-    } finally {
-      setLoadingSponsorships(false)
-    }
-  }
+  // removed unused loadSponsorships (we now use cache + subscription)
 
   const loadQrCode = async () => {
     setLoadingQr(true)
@@ -206,7 +206,6 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
   })
 
   const getFlatNumber = () => {
-    console.log(currentApartment)
     const towerLetter = String.fromCharCode(65 + currentApartment.tower - 1) // A, B, C, etc.
     const floorUnit = `${currentApartment.floor.toString()}${currentApartment.unit.toString().padStart(2, "0")}`
     return `${towerLetter}${floorUnit}`
@@ -678,6 +677,10 @@ export function DonationForm({ onCancel, preselectedApartment, onDonationCreated
                         <SelectItem value="Surojeet">Surojeet</SelectItem>
                         <SelectItem value="Pramit">Pramit</SelectItem>
                         <SelectItem value="Abhijit Banerjee">Abhijit Banerjee</SelectItem>
+                        <SelectItem value="Indranil">Indranil</SelectItem>
+                        <SelectItem value="Sanjib">Sanjib</SelectItem>
+                        <SelectItem value="Abhijit RC">Abhijit RC</SelectItem>
+                        <SelectItem value="Avik">Avik</SelectItem>
                       </SelectContent>
                     </Select>
                   )}

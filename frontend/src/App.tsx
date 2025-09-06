@@ -33,6 +33,8 @@ function AppContent() {
           if (token) {
             donationsService.updateToken(token)
             sponsorshipsService.updateToken(token)
+            // Preload sponsorships into client-side cache
+            try { await sponsorshipsService.preloadSponsorships() } catch {}
           }
         }
       } catch (error) {
@@ -56,6 +58,8 @@ function AppContent() {
     if (token) {
       donationsService.updateToken(token)
       sponsorshipsService.updateToken(token)
+      // Preload sponsorships after login
+      sponsorshipsService.preloadSponsorships().catch(() => {})
     }
   }
 

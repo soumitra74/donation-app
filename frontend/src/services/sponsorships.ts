@@ -32,6 +32,8 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost/api/v1'
 
 class SponsorshipsService {
   private token: string | null = null
+  private sponsorshipsCache: Sponsorship[] | null = null
+  private subscribers: Array<(sponsorships: Sponsorship[]) => void> = []
 
   constructor() {
     // Load token from localStorage on initialization
@@ -74,7 +76,10 @@ class SponsorshipsService {
 
   // Get all sponsorships
   async getSponsorships(): Promise<Sponsorship[]> {
-    return await this.makeRequest('/sponsorships')
+    const data = await this.makeRequest('/sponsorships')
+    this.sponsorshipsCache = data
+    this.notifySubscribers()
+    return data
   }
 
   // Get a specific sponsorship
@@ -84,45 +89,89 @@ class SponsorshipsService {
 
   // Create a new sponsorship
   async createSponsorship(data: CreateSponsorshipData): Promise<Sponsorship> {
-    return await this.makeRequest('/sponsorships', {
+    const created = await this.makeRequest('/sponsorships', {
       method: 'POST',
       body: JSON.stringify(data),
     })
+    await this.preloadSponsorships(true)
+    return created
   }
 
   // Update a sponsorship
   async updateSponsorship(sponsorshipId: number, data: UpdateSponsorshipData): Promise<Sponsorship> {
-    return await this.makeRequest(`/sponsorships/${sponsorshipId}`, {
+    const updated = await this.makeRequest(`/sponsorships/${sponsorshipId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
+    await this.preloadSponsorships(true)
+    return updated
   }
 
   // Delete a sponsorship
   async deleteSponsorship(sponsorshipId: number): Promise<void> {
-    return await this.makeRequest(`/sponsorships/${sponsorshipId}`, {
+    const res = await this.makeRequest(`/sponsorships/${sponsorshipId}`, {
       method: 'DELETE',
     })
+    await this.preloadSponsorships(true)
+    return res
   }
 
   // Book a sponsorship
   async bookSponsorship(sponsorshipId: number): Promise<Sponsorship> {
-    return await this.makeRequest(`/sponsorships/${sponsorshipId}/book`, {
+    const booked = await this.makeRequest(`/sponsorships/${sponsorshipId}/book`, {
       method: 'POST',
     })
+    await this.preloadSponsorships(true)
+    return booked
   }
 
   // Unbook a sponsorship
   async unbookSponsorship(sponsorshipId: number): Promise<Sponsorship> {
-    return await this.makeRequest(`/sponsorships/${sponsorshipId}/unbook`, {
+    const unbooked = await this.makeRequest(`/sponsorships/${sponsorshipId}/unbook`, {
       method: 'POST',
     })
+    await this.preloadSponsorships(true)
+    return unbooked
   }
 
   // Get available sponsorships (not fully booked)
   async getAvailableSponsorships(): Promise<Sponsorship[]> {
     const sponsorships = await this.getSponsorships()
     return sponsorships.filter(sponsorship => !sponsorship.is_closed)
+  }
+
+  // Preload sponsorships and populate cache
+  async preloadSponsorships(forceRefresh: boolean = false): Promise<Sponsorship[]> {
+    if (!forceRefresh && this.sponsorshipsCache) {
+      return this.sponsorshipsCache
+    }
+    return await this.getSponsorships()
+  }
+
+  // Get cached sponsorships (may be empty)
+  getCachedSponsorships(): Sponsorship[] {
+    return this.sponsorshipsCache ? [...this.sponsorshipsCache] : []
+  }
+
+  // Get cached available sponsorships
+  getCachedAvailableSponsorships(): Sponsorship[] {
+    return this.getCachedSponsorships().filter(s => !s.is_closed)
+  }
+
+  // Subscribe to sponsorship updates
+  subscribe(listener: (sponsorships: Sponsorship[]) => void): () => void {
+    this.subscribers.push(listener)
+    return () => {
+      this.subscribers = this.subscribers.filter(l => l !== listener)
+    }
+  }
+
+  private notifySubscribers() {
+    if (!this.sponsorshipsCache) return
+    const snapshot = [...this.sponsorshipsCache]
+    this.subscribers.forEach(listener => {
+      try { listener(snapshot) } catch {}
+    })
   }
 
   // Update token (for syncing with auth service)
@@ -133,6 +182,7 @@ class SponsorshipsService {
   // Clear token
   clearToken() {
     this.token = null
+    this.sponsorshipsCache = null
   }
 }
 
