@@ -9,7 +9,7 @@ import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift, X as XIcon } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
-import { donationsService, Donation, DonationStats } from "@/services/donations"
+import { donationsService, Donation, DonationStats, TodayStats } from "@/services/donations"
 
 interface DonationDashboardProps {
   user: User
@@ -23,6 +23,7 @@ interface DonationDashboardProps {
 export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManagement, onNavigateToSponsorshipManagement, theme }: DonationDashboardProps) {
   const [donations, setDonations] = useState<Donation[]>([])
   const [stats, setStats] = useState<DonationStats | null>(null)
+  const [todayStats, setTodayStats] = useState<TodayStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [selectedApartment, setSelectedApartment] = useState<{ tower: number; floor: number; unit: number } | null>(
@@ -36,6 +37,7 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
   const [recentDonations, setRecentDonations] = useState<Donation[]>([])
   const [recentTotalCount, setRecentTotalCount] = useState(0)
   const [recentLoading, setRecentLoading] = useState(false)
+
 
   // Get assigned towers from user roles
   const assignedTowers = roles.reduce((towers: number[], role) => {
@@ -56,13 +58,15 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
     const loadDonations = async () => {
       try {
         setLoading(true)
-        const [donationsData, statsData] = await Promise.all([
+        const [donationsData, statsData, todayStatsData] = await Promise.all([
           // If admin, get all donations, otherwise get user's donations
           isAdmin ? donationsService.getDonations() : donationsService.getMyDonations(parseInt(user.id)),
-          donationsService.getStats()
+          donationsService.getStats(),
+          donationsService.getTodayStats()
         ])
         setDonations(donationsData)
         setStats(statsData)
+        setTodayStats(todayStatsData)
         setCurrentPage(1)
       } catch (error) {
         console.error('Failed to load donations:', error)
@@ -120,13 +124,15 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
   const refreshDonations = async () => {
     try {
       setLoading(true)
-      const [donationsData, statsData] = await Promise.all([
+      const [donationsData, statsData, todayStatsData] = await Promise.all([
         // If admin, get all donations, otherwise get user's donations
         isAdmin ? donationsService.getDonations() : donationsService.getMyDonations(parseInt(user.id)),
-        donationsService.getStats()
+        donationsService.getStats(),
+        donationsService.getTodayStats()
       ])
       setDonations(donationsData)
       setStats(statsData)
+      setTodayStats(todayStatsData)
     } catch (error) {
       console.error('Failed to refresh donations:', error)
     } finally {
@@ -588,10 +594,11 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           </div>
         </div>
 
+        {/* Today's Collections */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className={`${
-            theme === 'ambient' 
-              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
               : theme === 'dark'
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white'
@@ -600,7 +607,109 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
               <CardTitle className={`text-sm font-medium ${
                 theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
               }`}>
-                Total Collected
+                Today's Collection
+              </CardTitle>
+              <TrendingUp className={`h-4 w-4 ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`} />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-24 rounded"></div>
+                ) : (
+                  `₹${todayStats ? todayStats.total_amount.toLocaleString() : 0}`
+                )}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                From {todayStats ? todayStats.total_donations : 0} donations today
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className={`${
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Today's Donations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-16 rounded"></div>
+                ) : (
+                  todayStats ? todayStats.total_donations : 0
+                )}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Collected today
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className={`${
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Today's Average
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                {loading ? (
+                  <div className="animate-pulse bg-gray-300 h-8 w-20 rounded"></div>
+                ) : (
+                  `₹${todayStats ? Math.round(todayStats.average_donation) : 0}`
+                )}
+              </div>
+              <p className={`text-xs ${
+                theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                Per donation today
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Overall Collections */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className={`${
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
+              : theme === 'dark'
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white'
+          }`}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className={`text-sm font-medium ${
+                theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
+              }`}>
+                Total Collection
               </CardTitle>
               <TrendingUp className={`h-4 w-4 ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
@@ -625,8 +734,8 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           </Card>
 
           <Card className={`${
-            theme === 'ambient' 
-              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
               : theme === 'dark'
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white'
@@ -657,8 +766,8 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           </Card>
 
           <Card className={`${
-            theme === 'ambient' 
-              ? 'bg-white/10 backdrop-blur-md border-white/20' 
+            theme === 'ambient'
+              ? 'bg-white/10 backdrop-blur-md border-white/20'
               : theme === 'dark'
               ? 'bg-gray-800 border-gray-700'
               : 'bg-white'

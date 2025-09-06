@@ -468,25 +468,68 @@ def get_stats():
     try:
         # Total donations
         total_donations = Donation.query.filter_by(status='completed').count()
-        
+
         # Total amount collected
         total_amount = db.session.query(func.sum(Donation.amount)).filter_by(status='completed').scalar() or 0
-        
+
         # Average donation
         avg_donation = db.session.query(func.avg(Donation.amount)).filter_by(status='completed').scalar() or 0
-        
+
         # Follow-ups count
         follow_ups = Donation.query.filter_by(status='follow-up').count()
-        
+
         # Skipped count
         skipped = Donation.query.filter_by(status='skipped').count()
-        
+
         return jsonify({
             'total_donations': total_donations,
             'total_amount': float(total_amount),
             'average_donation': float(avg_donation),
             'follow_ups': follow_ups,
             'skipped': skipped
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Today's statistics endpoint
+@api_bp.route('/stats/today', methods=['GET'])
+@require_auth
+def get_today_stats():
+    """Get today's donation statistics"""
+    try:
+        # Get today's date range (start and end of today)
+        today = datetime.now().date()
+        today_start = datetime.combine(today, datetime.min.time())
+        today_end = datetime.combine(today, datetime.max.time())
+
+        # Today's donations (completed status only)
+        today_donations = Donation.query.filter(
+            Donation.status == 'completed',
+            Donation.created_at >= today_start,
+            Donation.created_at <= today_end
+        )
+
+        # Total donations today
+        total_donations = today_donations.count()
+
+        # Total amount collected today
+        total_amount = db.session.query(func.sum(Donation.amount)).filter(
+            Donation.status == 'completed',
+            Donation.created_at >= today_start,
+            Donation.created_at <= today_end
+        ).scalar() or 0
+
+        # Average donation today
+        avg_donation = db.session.query(func.avg(Donation.amount)).filter(
+            Donation.status == 'completed',
+            Donation.created_at >= today_start,
+            Donation.created_at <= today_end
+        ).scalar() or 0
+
+        return jsonify({
+            'total_donations': total_donations,
+            'total_amount': float(total_amount),
+            'average_donation': float(avg_donation)
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
