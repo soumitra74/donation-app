@@ -47,7 +47,7 @@ class ExcelExporter:
             ["Exported At", datetime.now().strftime("%Y-%m-%d %H:%M:%S")],
             ["Last Collection At", stats['last_collection_date']],
             ["Towers Covered", stats['towers_covered']],
-            ["Total Donation Amount", f"₹{stats['total_amount']:,.2f}"],
+            ["Total Donation Amount", stats['total_amount']],
             ["Apartments Visited", stats['apartments_visited']],
             ["Apartments For Follow Up", stats['apartments_follow_up']],
             ["Apartments Remaining", stats['apartments_remaining']],
@@ -60,6 +60,8 @@ class ExcelExporter:
             self.ws[f'A{row}'].font = Font(bold=True)
             self.ws[f'A{row}'].border = self.border
             self.ws[f'B{row}'].border = self.border
+            if label == "Total Donation Amount":
+                self.ws[f'B{row}'].number_format = '#,##0'
             row += 1
         
         # Summary by Tower
@@ -84,7 +86,7 @@ class ExcelExporter:
             tower_stats = self._get_tower_statistics(tower)
             if tower_stats['total_apartments'] > 0:
                 self.ws[f'A{row}'] = f"Tower {chr(64 + tower)}"
-                self.ws[f'B{row}'] = f"₹{tower_stats['total_amount']:,.2f}"
+                self.ws[f'B{row}'] = float(tower_stats['total_amount'])
                 self.ws[f'C{row}'] = tower_stats['donations']
                 self.ws[f'D{row}'] = tower_stats['follow_ups']
                 self.ws[f'E{row}'] = tower_stats['skipped']
@@ -96,7 +98,7 @@ class ExcelExporter:
                     cell = self.ws[f'{get_column_letter(col)}{row}']
                     cell.border = self.border
                     if col == 2:  # Amount column
-                        cell.number_format = '#,##0.00'
+                        cell.number_format = '#,##0'
                     elif col == 7:  # Percentage column
                         cell.number_format = '0.0%'
                 row += 1
@@ -194,14 +196,14 @@ class ExcelExporter:
             ws[f'E{row}'] = sponsorship.booked
             ws[f'F{row}'] = available
             ws[f'G{row}'] = status
-            ws[f'H{row}'] = sponsorship.created_at.strftime("%Y-%m-%d %H:%M")
+            ws[f'H{row}'] = sponsorship.created_at.strftime("%Y-%m-%d")
             
             # Apply borders and formatting
             for col in range(1, 9):
                 cell = ws[f'{get_column_letter(col)}{row}']
                 cell.border = self.border
                 if col == 3:  # Amount column
-                    cell.number_format = '₹#,##0.00'
+                    cell.number_format = '#,##0'
                 elif col == 4 or col == 5 or col == 6:  # Count columns
                     cell.number_format = '0'
             
@@ -252,14 +254,14 @@ class ExcelExporter:
             ws[f'H{row}'] = donation.head_count or ""
             ws[f'I{row}'] = donation.upi_other_person or ""
             ws[f'J{row}'] = donation.notes or ""
-            ws[f'K{row}'] = donation.created_at.strftime("%Y-%m-%d %H:%M")
+            ws[f'K{row}'] = donation.created_at.strftime("%Y-%m-%d")
             
             # Apply borders and formatting
             for col in range(1, 12):
                 cell = ws[f'{get_column_letter(col)}{row}']
                 cell.border = self.border
                 if col == 5:  # Amount column
-                    cell.number_format = '₹#,##0.00'
+                    cell.number_format = '#,##0'
                 elif col == 8:  # Head count column
                     cell.number_format = '0'
             
@@ -331,14 +333,14 @@ class ExcelExporter:
                 ws[f'I{row}'] = donation.sponsorship or ""
                 ws[f'J{row}'] = donation.notes or ""
                 ws[f'K{row}'] = donation.status
-                ws[f'L{row}'] = donation.created_at.strftime("%Y-%m-%d %H:%M")
+                ws[f'L{row}'] = donation.created_at.strftime("%Y-%m-%d")
                 
                 # Apply borders and formatting
                 for col in range(1, 13):
                     cell = ws[f'{get_column_letter(col)}{row}']
                     cell.border = self.border
                     if col == 5:  # Amount column
-                        cell.number_format = '#,##0.00'
+                        cell.number_format = '#,##0'
                 
                 row += 1
             
