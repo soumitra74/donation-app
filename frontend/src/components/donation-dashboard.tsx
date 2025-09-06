@@ -114,11 +114,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
       return "donated" // Default to donated for other statuses
     }
 
-    // Fallback to localStorage for visited apartments (temporary)
-    const apartmentKey = `${tower}-${floor}-${unit}`
-    const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]")
-    if (visitedApartments.includes(apartmentKey)) return "visited"
-    
     return "not-visited"
   }
 
@@ -416,8 +411,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                         
                         if (status === "donated") {
                           return `${baseClasses} bg-green-100 text-green-800 border border-green-300`
-                        } else if (status === "visited") {
-                          return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                         } else if (status === "skipped") {
                           return `${baseClasses} bg-slate-200 text-slate-800 border border-slate-400`
                         } else if (status === "follow-up") {
