@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, send_file
 from models import db, Donor, Donation, Campaign, User, Sponsorship
 from schemas import donor_schema, donors_schema, donation_schema, donations_schema, campaign_schema, campaigns_schema, sponsorship_schema, sponsorships_schema, qr_code_upload_schema
-from auth import require_auth, require_tower_access
+from auth import require_auth, require_tower_access, require_role
 from sqlalchemy import func
 from excel_export import export_donations_to_excel
 from datetime import datetime
@@ -156,6 +156,30 @@ def create_donation():
         db.session.add(donation)
         db.session.commit()
         return jsonify(donation_schema.dump(donation)), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@api_bp.route('/donations/<int:donation_id>', methods=['DELETE'])
+@require_auth
+@require_role('admin')
+def delete_donation(donation_id):
+    """Delete a specific donation (admin only)"""
+    try:
+        donation = Donation.query.get_or_404(donation_id)
+
+        # If donation was linked to a sponsorship, adjust booked count and reopen if needed
+        if donation.sponsorship_id:
+            sponsorship = Sponsorship.query.get(donation.sponsorship_id)
+            if sponsorship and sponsorship.booked is not None:
+                sponsorship.booked = max(0, (sponsorship.booked or 0) - 1)
+                if sponsorship.is_closed and sponsorship.booked < sponsorship.max_count:
+                    sponsorship.is_closed = False
+                db.session.add(sponsorship)
+
+        db.session.delete(donation)
+        db.session.commit()
+        return jsonify({'message': 'Donation deleted successfully'}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 400

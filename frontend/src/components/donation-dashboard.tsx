@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
 import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift } from "lucide-react"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift, X as XIcon } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
 import { donationsService, Donation, DonationStats } from "@/services/donations"
 
@@ -116,6 +116,19 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
       alert('Failed to export Excel file. Please try again.')
     } finally {
       setExporting(false)
+    }
+  }
+
+  const handleDeleteDonation = async (donationId: number) => {
+    if (!isAdmin) return
+    const confirmed = window.confirm('Delete this donation? This cannot be undone.')
+    if (!confirmed) return
+    try {
+      await donationsService.deleteDonation(donationId)
+      await refreshDonations()
+    } catch (error) {
+      console.error('Failed to delete donation:', error)
+      alert('Failed to delete donation. Please try again.')
     }
   }
 
@@ -765,13 +778,30 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                           {new Date(donation.created_at).toLocaleTimeString()}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold text-green-600">₹{donation.amount}</div>
-                        {donation.head_count && <p className={`text-xs ${
-                          theme === 'ambient' ? 'text-white/50' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                        }`}>
-                          {donation.head_count} people
-                        </p>}
+                      <div className="flex items-center gap-3">
+                        {isAdmin && (
+                          <button
+                            aria-label="Delete donation"
+                            onClick={() => handleDeleteDonation(donation.id)}
+                            className={`${
+                              theme === 'ambient'
+                                ? 'text-white/70 hover:text-white'
+                                : theme === 'dark'
+                                ? 'text-gray-300 hover:text-white'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-green-600">₹{donation.amount}</div>
+                          {donation.head_count && <p className={`text-xs ${
+                            theme === 'ambient' ? 'text-white/50' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            {donation.head_count} people
+                          </p>}
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -118,6 +118,13 @@ class DonationsService {
     })
   }
 
+  // Delete a donation (admin only)
+  async deleteDonation(donationId: number): Promise<{ message: string }> {
+    return await this.makeRequest(`/donations/${donationId}`, {
+      method: 'DELETE',
+    })
+  }
+
   // Get donation for a specific apartment
   async getApartmentDonation(tower: number, floor: number, unit: number): Promise<Donation | null> {
     try {
