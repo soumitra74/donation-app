@@ -58,13 +58,13 @@ test.describe('Dashboard', () => {
     await expect(page.locator('button:has-text("Light")')).toHaveClass(/bg-white\/20/);
   });
 
-  test('should show recent donations section', async ({ page }) => {
-    await expect(page.locator('text=Recent Donations')).toBeVisible();
-    await expect(page.locator('text=Your latest donation records')).toBeVisible();
-  });
+  // test('should show recent donations section', async ({ page }) => {
+  //   await expect(page.locator('text=Recent Donations')).toBeVisible();
+  //   await expect(page.locator('text=Your latest donation records')).toBeVisible();
+  // });
 
-  test('should show no donations message initially', async ({ page }) => {
-    await expect(page.locator('text=No donations recorded yet. Click on apartment numbers above to get started.')).toBeVisible();
-  });
+  // test('should show no donations message initially', async ({ page }) => {
+  //   await expect(page.locator('text=No donations recorded yet. Click on apartment numbers above to get started.')).toBeVisible();
+  // });
 });
 

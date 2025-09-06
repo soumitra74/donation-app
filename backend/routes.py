@@ -51,18 +51,69 @@ def create_donor():
 @api_bp.route('/donations', methods=['GET'])
 @require_auth
 def get_donations():
-    """Get all donations"""
-    # Get user_id from query parameter to filter by user
+    """Get donations, optionally filtered by user and paginated.
+
+    Supported query params:
+    - user_id: int -> filter by collector user id
+    - page: int (1-based)
+    - page_size: int (default 20, max 100)
+    - limit: int (alternative to page_size)
+    - offset: int (0-based, alternative to page)
+
+    Notes:
+    - Results are ordered by created_at DESC (most recent first)
+    - Response body remains an array for backward compatibility
+    - Pagination metadata is provided via headers: X-Total-Count, X-Page, X-Page-Size
+    """
+    # Filters
     user_id = request.args.get('user_id', type=int)
-    
+
+    # Pagination params
+    page = request.args.get('page', type=int)
+    page_size = request.args.get('page_size', type=int)
+    limit = request.args.get('limit', type=int)
+    offset = request.args.get('offset', type=int)
+
+    # Build base query
+    query = Donation.query
     if user_id:
-        # Filter donations by user_id
-        donations = Donation.query.filter_by(user_id=user_id).all()
-    else:
-        # Get all donations (for admin users)
-        donations = Donation.query.all()
-    
-    return jsonify(donations_schema.dump(donations))
+        query = query.filter_by(user_id=user_id)
+
+    # Order by most recent
+    query = query.order_by(Donation.created_at.desc())
+
+    # Total count before slicing
+    total_count = query.count()
+
+    # Apply pagination
+    applied_page = None
+    applied_page_size = None
+    if page is not None or page_size is not None:
+        # Normalize values
+        applied_page = max(1, page or 1)
+        applied_page_size = page_size or 20
+        applied_page_size = max(1, min(applied_page_size, 100))
+        calc_offset = (applied_page - 1) * applied_page_size
+        query = query.offset(calc_offset).limit(applied_page_size)
+    elif limit is not None or offset is not None:
+        # Offset-limit style
+        calc_offset = max(0, offset or 0)
+        calc_limit = max(1, min(limit or 20, 100))
+        applied_page = (calc_offset // calc_limit) + 1 if calc_limit else 1
+        applied_page_size = calc_limit
+        query = query.offset(calc_offset).limit(calc_limit)
+
+    donations = query.all()
+
+    response = jsonify(donations_schema.dump(donations))
+    # Add pagination headers (always include total for clients that care)
+    response.headers['X-Total-Count'] = str(total_count)
+    if applied_page is not None:
+        response.headers['X-Page'] = str(applied_page)
+    if applied_page_size is not None:
+        response.headers['X-Page-Size'] = str(applied_page_size)
+
+    return response
 
 @api_bp.route('/donations/<int:donation_id>', methods=['GET'])
 @require_auth
