@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, ValidationError
+from marshmallow import Schema, fields, ValidationError, validates_schema
 from marshmallow.validate import Range, Length, OneOf, Email
 from models import Donor, Donation, Campaign, User, Invite, UserRole, Sponsorship
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
@@ -123,7 +123,7 @@ class DonationSchema(SQLAlchemyAutoSchema):
         include_fk = True
     
     # Custom validation
-    amount = fields.Int(required=True, validate=Range(min=1))  # Integer amount in rupees
+    amount = fields.Int(required=True, validate=Range(min=0))  # Integer amount in rupees (min 0)
     donor_name = fields.Str(required=True, validate=Length(min=1, max=100))
     tower = fields.Int(required=True, validate=Range(min=1, max=100))
     floor = fields.Int(required=True, validate=Range(min=1, max=100))
@@ -141,6 +141,27 @@ class DonationSchema(SQLAlchemyAutoSchema):
     campaign_id = fields.Int(required=False)
     user_id = fields.Int(required=False)
     sponsorship_id = fields.Int(required=False)
+
+    @validates_schema
+    def validate_amount_against_sponsorship(self, data, **kwargs):
+        """If a sponsorship is chosen, amount must be more than the sponsorship amount."""
+        amount = data.get('amount')
+        sponsorship_id = data.get('sponsorship_id')
+
+        if amount is None or sponsorship_id is None:
+            return
+
+        try:
+            sponsorship = Sponsorship.query.get(sponsorship_id)
+        except Exception:
+            sponsorship = None
+
+        if sponsorship is not None:
+            if amount < sponsorship.amount:
+                raise ValidationError(
+                    'Amount must be more than the sponsorship amount',
+                    field_name='amount'
+                )
 
 # Schema instances
 user_schema = UserSchema()

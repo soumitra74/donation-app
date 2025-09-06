@@ -133,10 +133,6 @@ export class TestUtils {
       const skippedApartments = JSON.parse(localStorage.getItem("donation-app-skipped") || "[]");
       const skipped = skippedApartments.find((s: any) => s.tower === tower && s.floor === floor && s.unit === unit);
       if (skipped) return "skipped";
-
-      const apartmentKey = `${tower}-${floor}-${unit}`;
-      const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]");
-      if (visitedApartments.includes(apartmentKey)) return "visited";
       
       return "not-visited";
     }, { tower, floor, unit });

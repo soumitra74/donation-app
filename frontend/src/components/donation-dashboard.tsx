@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DonationForm } from "@/components/donation-form"
 import { Profile } from "@/components/profile"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift } from "lucide-react"
+import { LogOut, Plus, TrendingUp, ChevronLeft, ChevronRight, Download, User as UserIcon, Gift, X as XIcon } from "lucide-react"
 import { User, UserRole } from "@/services/auth"
 import { donationsService, Donation, DonationStats } from "@/services/donations"
 
@@ -31,6 +31,11 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
   const [currentTowerIndex, setCurrentTowerIndex] = useState(0)
   const [showProfile, setShowProfile] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [recentDonations, setRecentDonations] = useState<Donation[]>([])
+  const [recentTotalCount, setRecentTotalCount] = useState(0)
+  const [recentLoading, setRecentLoading] = useState(false)
 
   // Get assigned towers from user roles
   const assignedTowers = roles.reduce((towers: number[], role) => {
@@ -58,6 +63,7 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
         ])
         setDonations(donationsData)
         setStats(statsData)
+        setCurrentPage(1)
       } catch (error) {
         console.error('Failed to load donations:', error)
         // Fallback to localStorage if API fails
@@ -73,6 +79,32 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
     loadDonations()
   }, [user.id, isAdmin])
 
+  // Load recent donations from backend with pagination
+  const loadRecentPage = async () => {
+    try {
+      setRecentLoading(true)
+      const result = isAdmin
+        ? await donationsService.getDonationsPaginated({ page: currentPage, page_size: pageSize })
+        : await donationsService.getMyDonationsPaginated(parseInt(user.id), currentPage, pageSize)
+      setRecentDonations(result.items)
+      setRecentTotalCount(result.totalCount)
+    } catch (error) {
+      console.error('Failed to load recent donations:', error)
+      // Fallback to client-side slice if server pagination fails
+      const sorted = [...donations].sort((a: Donation, b: Donation) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      const start = (currentPage - 1) * pageSize
+      const end = start + pageSize
+      setRecentDonations(sorted.slice(start, end))
+      setRecentTotalCount(sorted.length)
+    } finally {
+      setRecentLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    loadRecentPage()
+  }, [currentPage, pageSize, isAdmin, user.id])
+
   const getApartmentStatus = (tower: number, floor: number, unit: number) => {
     const donation = donations.find((d) => d.tower === tower && d.floor === floor && d.unit === unit)
     if (donation) {
@@ -82,11 +114,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
       return "donated" // Default to donated for other statuses
     }
 
-    // Fallback to localStorage for visited apartments (temporary)
-    const apartmentKey = `${tower}-${floor}-${unit}`
-    const visitedApartments = JSON.parse(localStorage.getItem("visited-apartments") || "[]")
-    if (visitedApartments.includes(apartmentKey)) return "visited"
-    
     return "not-visited"
   }
 
@@ -119,13 +146,34 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
     }
   }
 
+  const recentTotalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(recentTotalCount / pageSize))
+  }, [recentTotalCount, pageSize])
+
+  // Reset to page 1 when page size changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [pageSize])
+
+  const handleDeleteDonation = async (donationId: number) => {
+    if (!isAdmin) return
+    const confirmed = window.confirm('Delete this donation? This cannot be undone.')
+    if (!confirmed) return
+    try {
+      await donationsService.deleteDonation(donationId)
+      await refreshDonations()
+    } catch (error) {
+      console.error('Failed to delete donation:', error)
+      alert('Failed to delete donation. Please try again.')
+    }
+  }
+
   const getApartmentNumber = (tower: number, floor: number, unit: number) => {
     const towerLetter = String.fromCharCode(64 + tower) // A, B, C, etc.
     return `${towerLetter}${floor.toString()}${unit.toString().padStart(2, "0")}`
   }
 
   const handleApartmentClick = (tower: number, floor: number, unit: number) => {
-    console.log(tower, floor, unit)
     setSelectedApartment({ tower, floor, unit })
     setShowForm(true)
   }
@@ -177,28 +225,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
         }`}>
           Skip
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
-        <span className={`text-xs ${
-          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-          Visited
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className={`w-3 h-3 rounded ${
-          theme === 'ambient' 
-            ? 'bg-white/10 border border-white/20' 
-            : theme === 'dark'
-            ? 'bg-gray-700 border border-gray-600'
-            : 'bg-gray-100 border border-gray-200'
-        }`}></div>
-        <span className={`text-xs ${
-          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-          Not Visited
         </span>
       </div>
     </div>
@@ -384,8 +410,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                         
                         if (status === "donated") {
                           return `${baseClasses} bg-green-100 text-green-800 border border-green-300`
-                        } else if (status === "visited") {
-                          return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                         } else if (status === "skipped") {
                           return `${baseClasses} bg-slate-200 text-slate-800 border border-slate-400`
                         } else if (status === "follow-up") {
@@ -510,8 +534,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                                 
                                 if (status === "donated") {
                                   return `${baseClasses} bg-green-100 text-green-800 border border-green-300`
-                                } else if (status === "visited") {
-                                  return `${baseClasses} bg-yellow-100 text-yellow-800 border border-yellow-300`
                                 } else if (status === "skipped") {
                                   return `${baseClasses} bg-slate-200 text-slate-800 border border-slate-400`
                                 } else if (status === "follow-up") {
@@ -696,34 +718,97 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                 <CardTitle className={
                   theme === 'ambient' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }>
-                  {isAdmin ? 'All Recent Donations' : 'Recent Donations'}
+                  {isAdmin ? 'All Donations' : 'Block Donations'}
                 </CardTitle>
                 <CardDescription className={
                   theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                 }>
-                  {isAdmin ? 'Latest donation records from all volunteers' : 'Your latest donation records'}
+                  {isAdmin ? 'Donation records from all volunteers' : 'Your donation records'}
                 </CardDescription>
               </div>
-              <Button
-                onClick={handleExportExcel}
-                disabled={exporting}
-                variant="outline"
-                size="sm"
-                className={`${
-                  theme === 'ambient' 
-                    ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
-                    : theme === 'dark'
-                    ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {exporting ? 'Exporting...' : 'Export Excel'}
-              </Button>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className={
+                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }>Per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => setPageSize(parseInt(e.target.value))}
+                    className={`${
+                      theme === 'ambient'
+                        ? 'bg-white/10 border-white/20 text-white'
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    } rounded-md border px-2 py-1`}
+                  >
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className={`${
+                      theme === 'ambient' 
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Prev
+                  </Button>
+                  <span className={
+                    theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  }>
+                    {currentPage} / {recentTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(recentTotalPages, p + 1))}
+                    disabled={currentPage >= recentTotalPages}
+                    className={`${
+                      theme === 'ambient' 
+                        ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                        : theme === 'dark'
+                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Next
+                  </Button>
+                </div>
+                <Button
+                  onClick={handleExportExcel}
+                  disabled={exporting}
+                  variant="outline"
+                  size="sm"
+                  className={`${
+                    theme === 'ambient' 
+                      ? 'bg-white/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-md' 
+                      : theme === 'dark'
+                      ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700'
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {exporting ? 'Exporting...' : 'Export Excel'}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            {donations.length === 0 ? (
+            {recentLoading ? (
+              <p className={`${
+                theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+              }`}>Loading...</p>
+            ) : recentDonations.length === 0 ? (
               <p className={`text-center py-8 ${
                 theme === 'ambient' ? 'text-white/60' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}>
@@ -731,10 +816,7 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
               </p>
             ) : (
               <div className="space-y-4">
-                {donations
-                  .sort((a: Donation, b: Donation) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                  .slice(0, 10)
-                  .map((donation: Donation) => (
+                {recentDonations.map((donation: Donation) => (
                     <div key={donation.id} className={`flex items-center justify-between p-4 border rounded-lg ${
                       theme === 'ambient' 
                         ? 'bg-white/5 border-white/10' 
@@ -765,13 +847,30 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
                           {new Date(donation.created_at).toLocaleTimeString()}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold text-green-600">₹{donation.amount}</div>
-                        {donation.head_count && <p className={`text-xs ${
-                          theme === 'ambient' ? 'text-white/50' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                        }`}>
-                          {donation.head_count} people
-                        </p>}
+                      <div className="flex items-center gap-3">
+                        {isAdmin && (
+                          <button
+                            aria-label="Delete donation"
+                            onClick={() => handleDeleteDonation(donation.id)}
+                            className={`${
+                              theme === 'ambient'
+                                ? 'text-white/70 hover:text-white'
+                                : theme === 'dark'
+                                ? 'text-gray-300 hover:text-white'
+                                : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        <div className="text-right">
+                          <div className="text-lg font-semibold text-green-600">₹{donation.amount}</div>
+                          {donation.head_count && <p className={`text-xs ${
+                            theme === 'ambient' ? 'text-white/50' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                          }`}>
+                            {donation.head_count} people
+                          </p>}
+                        </div>
                       </div>
                     </div>
                   ))}

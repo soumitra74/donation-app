@@ -91,6 +91,38 @@ class DonationsService {
     }
   }
 
+  private async makeRequestWithHeaders(endpoint: string, options: RequestInit = {}): Promise<{ data: any, headers: Headers }> {
+    const url = `${API_BASE_URL}${endpoint}`
+
+    const config: RequestInit = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    }
+
+    if (this.token) {
+      config.headers = {
+        ...config.headers,
+        'Authorization': `Bearer ${this.token}`,
+      }
+    }
+
+    try {
+      const response = await fetch(url, config)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      const data = await response.json()
+      return { data, headers: response.headers }
+    } catch (error) {
+      console.error('API request failed:', error)
+      throw error
+    }
+  }
+
   // Get all donations
   async getDonations(): Promise<Donation[]> {
     return await this.makeRequest('/donations')
@@ -115,6 +147,13 @@ class DonationsService {
     return await this.makeRequest(endpoint, {
       method: 'PUT',
       body: JSON.stringify(donationData),
+    })
+  }
+
+  // Delete a donation (admin only)
+  async deleteDonation(donationId: number): Promise<{ message: string }> {
+    return await this.makeRequest(`/donations/${donationId}`, {
+      method: 'DELETE',
     })
   }
 
@@ -183,6 +222,22 @@ class DonationsService {
   // Get donations by user (current user's donations)
   async getMyDonations(userId: number): Promise<Donation[]> {
     return await this.makeRequest(`/donations?user_id=${userId}`)
+  }
+
+  async getDonationsPaginated(params: { page?: number; page_size?: number; user_id?: number }): Promise<{ items: Donation[]; totalCount: number; page: number; pageSize: number; }> {
+    const query = new URLSearchParams()
+    if (typeof params.page === 'number') query.set('page', String(params.page))
+    if (typeof params.page_size === 'number') query.set('page_size', String(params.page_size))
+    if (typeof params.user_id === 'number') query.set('user_id', String(params.user_id))
+    const { data, headers } = await this.makeRequestWithHeaders(`/donations?${query.toString()}`)
+    const totalCount = parseInt(headers.get('X-Total-Count') || headers.get('x-total-count') || '0', 10)
+    const page = parseInt(headers.get('X-Page') || headers.get('x-page') || String(params.page || 1), 10)
+    const pageSize = parseInt(headers.get('X-Page-Size') || headers.get('x-page-size') || String(params.page_size || 20), 10)
+    return { items: data as Donation[], totalCount, page, pageSize }
+  }
+
+  async getMyDonationsPaginated(userId: number, page?: number, page_size?: number): Promise<{ items: Donation[]; totalCount: number; page: number; pageSize: number; }> {
+    return this.getDonationsPaginated({ user_id: userId, page, page_size })
   }
 
   // Export donations to Excel
