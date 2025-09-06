@@ -233,28 +233,6 @@ export function DonationDashboard({ user, roles, onLogout, onNavigateToUserManag
           Skip
         </span>
       </div>
-      <div className="flex items-center gap-1">
-        <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded"></div>
-        <span className={`text-xs ${
-          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-          Visited
-        </span>
-      </div>
-      <div className="flex items-center gap-1">
-        <div className={`w-3 h-3 rounded ${
-          theme === 'ambient' 
-            ? 'bg-white/10 border border-white/20' 
-            : theme === 'dark'
-            ? 'bg-gray-700 border border-gray-600'
-            : 'bg-gray-100 border border-gray-200'
-        }`}></div>
-        <span className={`text-xs ${
-          theme === 'ambient' ? 'text-white/80' : theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-        }`}>
-          Not Visited
-        </span>
-      </div>
     </div>
   )
 
