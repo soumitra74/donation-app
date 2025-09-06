@@ -65,6 +65,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Ensure Python outputs are unbuffered for real-time logs
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+
 # Copy Python dependencies from backend stage
 COPY --from=backend-builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=backend-builder /usr/local/bin /usr/local/bin
@@ -112,6 +115,10 @@ RUN ln -s /etc/nginx/sites-available/donation-app /etc/nginx/sites-enabled/
 # Remove default nginx site
 RUN rm -f /etc/nginx/sites-enabled/default
 
+# Stream nginx logs to stdout/stderr
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
+
 # Create startup script
 RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'set -e' >> /app/start.sh && \
@@ -144,14 +151,14 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start nginx in background' >> /app/start.sh && \
     echo 'echo "Starting nginx..."' >> /app/start.sh && \
-    echo 'nginx' >> /app/start.sh && \
+    echo "nginx -g 'daemon off;' &" >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Wait a moment for nginx to start' >> /app/start.sh && \
     echo 'sleep 2' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Start backend' >> /app/start.sh && \
+    echo '# Start backend with gunicorn (logs to stdout/stderr)' >> /app/start.sh && \
     echo 'echo "Starting backend..."' >> /app/start.sh && \
-    echo 'python run.py' >> /app/start.sh
+    echo 'exec gunicorn --workers 3 --bind 0.0.0.0:5000 --access-logfile - --error-logfile - app:app --chdir /app/backend' >> /app/start.sh
 
 # Make startup script executable
 RUN chmod +x /app/start.sh
